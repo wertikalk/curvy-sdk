@@ -1,0 +1,22 @@
+{
+    "name": "curvy-os",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "vite",
+        "build": "vite build"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "packageManager": "pnpm@10.7.1",
+    "devDependencies": {
+        "vite": "^7.0.4"
+    },
+    "dependencies": {
+        "@0xcurvy/curvy-sdk": "^0.0.3"
+    }
+}

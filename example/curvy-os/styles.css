@@ -1,0 +1,109 @@
+.field-row input#fromAddress,
+.field-row input#toAddress,
+.field-row input#stealthAddress {
+  width: 270px;
+}
+
+.field-row {
+  display: block !important;
+  margin-bottom: 10px !important;
+}
+
+li.balance {
+  cursor: pointer;
+}
+
+li.balance.selected {
+  background-color: navy;
+  color: #fff;
+  outline: 1px dotted #00f;
+}
+
+#register.window {
+  display: none;
+
+  width: 200px;
+  height: 116px;
+
+  position: absolute;
+  z-index: 100;
+
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+header label,
+button {
+  margin-left: 16px;
+}
+
+.window-body {
+  height: 400px;
+}
+#register.window .window-body button {
+  display: block;
+  text-align: center;
+  margin: 5px auto;
+  width: 160px;
+}
+
+aside {
+  margin-right: 16px;
+}
+
+fieldset label {
+  width: 80px;
+  text-align: right;
+  display: inline-block;
+}
+#hideZeroBalancesContainer,
+#addWalletButton,
+#refreshBalancesButton {
+  width: 100%;
+  margin: 6px 3px 0 0;
+}
+
+#walletsTab {
+  display: flex;
+}
+#window {
+  width: 800px;
+  margin: 20px auto;
+  position: absolute;
+  z-index: 99;
+
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.status-bar {
+  margin-top: 2px !important;
+}
+
+ul.tree-view {
+  height: calc(100% - 100px);
+  overflow: scroll;
+}
+
+.sunken-panel {
+  height: 100%;
+}
+
+body {
+  background-color: teal;
+  background-image: url(wallpaper.png);
+  background-repeat: no-repeat;
+  background-position: 100% 0;
+  background-size: 20%;
+}
+
+menu[role="tablist"] {
+  margin-top: 20px !important;
+}
+
+menu[role="tablist"] > li {
+  padding: 7px;
+  cursor: pointer;
+}

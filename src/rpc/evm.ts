@@ -29,34 +29,33 @@ export default class EVMRPC extends RPC {
       ({ contract_address }) => contract_address === undefined,
     ) || { name: "Ether", symbol: "ETH", decimals: 18 };
 
+    const chain = defineChain({
+      id: Number(this.network.chainId),
+      name: this.network.name,
+      rpcUrls: {
+        default: {
+          http: [this.network.rpcUrl],
+        },
+      },
+      nativeCurrency: {
+        name,
+        symbol,
+        decimals,
+      },
+    });
+
     this.publicClient = createPublicClient({
       transport: http(this.network.rpcUrl),
+      chain,
     });
 
     this.walletClient = createWalletClient({
       transport: http(this.network.rpcUrl),
-      chain: defineChain({
-        id: Number(this.network.chainId),
-        name: this.network.name,
-        rpcUrls: {
-          default: {
-            http: [this.network.rpcUrl],
-          },
-        },
-        nativeCurrency: {
-          name,
-          symbol,
-          decimals,
-        },
-      }),
+      chain,
     });
   }
 
   async GetBalances(stealthAddress: CurvyStealthAddress) {
-    if (stealthAddress.flavour !== "evm") {
-      return;
-    }
-
     const evmMulticall = getContract({
       abi: evmMulticall3Abi,
       address: this.network.multiCallContractAddress as Address,

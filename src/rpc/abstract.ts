@@ -16,7 +16,7 @@ export default abstract class RPC {
 
   abstract init(): void;
 
-  abstract GetBalances(stealthAddress: CurvyStealthAddress): Promise<Record<string, bigint> | undefined>;
+  abstract GetBalances(stealthAddress: CurvyStealthAddress): Promise<Record<string, bigint>>;
 
   abstract SendToAddress(
     stealthAddress: CurvyStealthAddress,

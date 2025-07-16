@@ -10,21 +10,15 @@ export default class MultiRPC {
   }
 
   public GetBalances(stealthAddress: CurvyStealthAddress): Promise<Record<string, bigint>> {
-    return Promise.all(this.rpcs.map((rpc) => rpc.GetBalances(stealthAddress))).then((results) => {
-      const combinedBalance: Record<string, bigint> = {};
+    // TODO needs better handling for cases where sa is on mainnet and testnet is selected and vice versa
+    const rpc = this.rpcs.find((rpc) => rpc.Network().id === stealthAddress.networkId);
 
-      for (const result of results) {
-        if (!result) {
-          continue;
-        }
+    if (!rpc) {
+      if (stealthAddress.networkId === -1)
+        throw new Error(`There is no adequate RPC for stealth address with network ID ${stealthAddress.networkId}`);
+    }
 
-        for (const [key, value] of Object.entries(result)) {
-          combinedBalance[key] = (combinedBalance[key] || BigInt(0)) + value;
-        }
-      }
-
-      return combinedBalance;
-    });
+    return rpc?.GetBalances(stealthAddress) || Promise.resolve({});
   }
 
   public Network(networkFilter: NetworkFilter): RPC {

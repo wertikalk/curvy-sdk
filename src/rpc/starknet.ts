@@ -45,10 +45,6 @@ export default class StarknetRPC extends RPC {
   }
 
   async GetBalances(stealthAddress: CurvyStealthAddress) {
-    if (stealthAddress.flavour !== "starknet") {
-      return;
-    }
-
     const starkMulticall = new Contract(
       starknetMulticallAbi,
       this.network.multiCallContractAddress as Address,

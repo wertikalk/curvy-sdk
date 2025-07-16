@@ -7,16 +7,18 @@ export default class CurvyStealthAddress {
   publicKey: string;
   address: string;
   flavour?: NetworkFlavour;
+  networkId: number;
 
   // balances are mapped to specific currency names
   balances: Record<string, bigint>;
 
-  public constructor(privateKey: string, publicKey: string, flavour: NetworkFlavour | undefined);
+  public constructor(privateKey: string, publicKey: string, networkId: number, flavour: NetworkFlavour | undefined);
   public constructor();
-  public constructor(privateKey?: string, publicKey?: string, flavour?: NetworkFlavour) {
+  public constructor(privateKey?: string, publicKey?: string, networkId?: number, flavour?: NetworkFlavour) {
     this.privateKey = privateKey || "";
     this.publicKey = publicKey || "";
     this.balances = {};
+    this.networkId = networkId || -1;
     this.flavour = flavour;
     this.address = deriveAddress(this.publicKey, flavour);
   }

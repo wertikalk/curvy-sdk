@@ -23,7 +23,7 @@ export type ScannedAnnouncement = Announcement & {
 };
 
 export type NetworkFlavour = "evm" | "starknet";
-export type NetworkGroup = "Ethereum" | "Starknet";
+export type NetworkGroup = "Ethereum" | "Starknet" | "Arbitrum";
 
 export type Network = {
   id: number;

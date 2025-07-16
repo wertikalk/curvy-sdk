@@ -17,6 +17,6 @@
         "vite": "^7.0.4"
     },
     "dependencies": {
-        "@0xcurvy/curvy-sdk": "^0.0.3"
+        "@0xcurvy/curvy-sdk": "^0.0.4"
     }
 }

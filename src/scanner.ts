@@ -24,6 +24,7 @@ export default class AnnouncementScanner {
   public async Scan(wallets: CurvyWallet[], announcements: Announcement[]) {
     const chunkSize = 250;
     let matched = 0;
+
     for (let announcementCursor = 0; announcementCursor < announcements.length; announcementCursor += chunkSize) {
       const chunkOfNewAnnouncements = announcements.slice(announcementCursor, announcementCursor + chunkSize);
 
@@ -37,6 +38,7 @@ export default class AnnouncementScanner {
             const stealthAddress = new CurvyStealthAddress(
               scanResult.spendingPrivKeys[scanResultCursor],
               scanResult.spendingPubKeys[scanResultCursor],
+              chunkOfNewAnnouncements[scanResultCursor].network_id,
               chunkOfNewAnnouncements[scanResultCursor].networkFlavour,
             );
 

@@ -34,6 +34,11 @@ function fromUint256(l: BigNumberish, h: BigNumberish): bigint {
   return low + bhigh;
 }
 
+export type StarknetFeeEstimate = {
+  deployFee: EstimateFee | undefined;
+  transactionFee: EstimateFee;
+};
+
 export default class StarknetRPC extends RPC {
   private provider!: Provider;
 
@@ -254,20 +259,20 @@ export default class StarknetRPC extends RPC {
     address: string,
     amount: string,
     currency: string,
-    fee?: [transactionFee: EstimateFee, deployFee: EstimateFee],
+    fee?: StarknetFeeEstimate,
   ): Promise<string> {
     // TODO: Typify hash
     if (!(await this._CheckIsStarknetAccountDeployed(stealthAddress))) {
-      await this.DeployStarknetAccount(stealthAddress, true, fee?.[1]);
+      await this.DeployStarknetAccount(stealthAddress, true, fee?.deployFee);
     }
 
     const { starknetAccount, txPayload } = this._PrepareTx(stealthAddress, address as `0x${string}`, amount, currency);
 
     let feeEstimate: EstimateFee;
-    if (fee?.[0] === undefined) {
+    if (fee === undefined) {
       feeEstimate = await this._EstimateFee(starknetAccount, txPayload);
     } else {
-      feeEstimate = fee?.[0];
+      feeEstimate = fee.transactionFee;
     }
 
     const result = await starknetAccount.execute([txPayload], {
@@ -284,7 +289,7 @@ export default class StarknetRPC extends RPC {
     address: Address,
     amount: string,
     currency: string,
-  ): Promise<[transactionFee: EstimateFee, deployFee?: EstimateFee]> {
+  ): Promise<StarknetFeeEstimate> {
     let deployFee: EstimateFee | undefined = undefined;
     const isDeployed = await this._CheckIsStarknetAccountDeployed(stealthAddress);
     if (!isDeployed) {
@@ -306,10 +311,10 @@ export default class StarknetRPC extends RPC {
 
     const transactionFee = await this._EstimateFee(starknetAccount, txPayload);
 
-    return [transactionFee, deployFee];
+    return { transactionFee, deployFee };
   }
 
-  FeeToAmount(feeEstimate: [transactionFee: EstimateFee, deployFee: EstimateFee | undefined]): bigint {
-    return BigInt(feeEstimate[0].overall_fee) + BigInt(feeEstimate[1]?.overall_fee ?? 0n);
+  FeeToAmount(feeEstimate: StarknetFeeEstimate): bigint {
+    return BigInt(feeEstimate.transactionFee.overall_fee) + BigInt(feeEstimate?.deployFee?.overall_fee ?? 0n);
   }
 }

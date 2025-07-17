@@ -1,6 +1,6 @@
+import { Core } from "@/core";
+import { ArrayAnnouncementStorage } from "@/storage/announcement-storage";
 import { expect, test } from "vitest";
-import { Core } from "../src/core/core";
-import { ArrayAnnouncementStorage } from "../src/storage/announcement-storage";
 import { mockPopulateAnnouncement } from "./utils/announcement-filler";
 
 test("should generate new Curvy keypairs", async () => {

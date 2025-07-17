@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@0xcurvy/curvy-sdk':
-        specifier: ^0.0.3
-        version: 0.0.3
+        specifier: ^0.0.4
+        version: 0.0.4
     devDependencies:
       vite:
         specifier: ^7.0.4
@@ -18,8 +18,8 @@ importers:
 
 packages:
 
-  '@0xcurvy/curvy-sdk@0.0.3':
-    resolution: {integrity: sha512-WpJeD53OS21Dacxi16PJ1j+7S3+yQi2hOmKhpkVjYFqLGSabXD8X20T7jbMyy2zfsbl2sTWZHAroLIdaxhv8TA==}
+  '@0xcurvy/curvy-sdk@0.0.4':
+    resolution: {integrity: sha512-w07vZDIUjGY9J4Ig82YlzisOIjoYeiOThmB4TrFLOIoN9HtL0vRI/8buMS3B3GYiuo9JhngP+4RqmqV83qKuXQ==}
 
   '@adraffy/ens-normalize@1.10.1':
     resolution: {integrity: sha512-96Z2IP3mYmF1Xg2cDm8f1gWGf/HUVedQ3FMifV4kG/PQ4yEP51xDtRAEfhVNt5f/uzpNkZHwWQuUcu6D6K+Ekw==}
@@ -384,10 +384,6 @@ packages:
   emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
 
-  esbuild-plugin-wasm@1.1.0:
-    resolution: {integrity: sha512-0bQ6+1tUbySSnxzn5jnXHMDvYnT0cN/Wd4Syk8g/sqAIJUg7buTIi22svS3Qz6ssx895NT+TgLPb33xi1OkZig==}
-    engines: {node: '>=0.10.0'}
-
   esbuild@0.25.6:
     resolution: {integrity: sha512-GVuzuUwtdsghE3ocJ9Bs8PNoF13HNQ5TXbEi2AhvVb8xU1Iwt9Fos9FEamfoee+u/TOsn7GUWc04lz46n2bbTg==}
     engines: {node: '>=18'}
@@ -610,9 +606,8 @@ packages:
 
 snapshots:
 
-  '@0xcurvy/curvy-sdk@0.0.3':
+  '@0xcurvy/curvy-sdk@0.0.4':
     dependencies:
-      esbuild-plugin-wasm: 1.1.0
       ethers: 6.15.0
       eventemitter3: 5.0.1
       starknet: 7.6.4
@@ -852,8 +847,6 @@ snapshots:
   color-name@1.1.4: {}
 
   emoji-regex@8.0.0: {}
-
-  esbuild-plugin-wasm@1.1.0: {}
 
   esbuild@0.25.6:
     optionalDependencies:

@@ -1,9 +1,9 @@
+import { Core } from "@/core";
+import { CurvyEventEmitter, SCAN_MATCH_EVENT, type ScanMatchEvent } from "@/events";
+import { ArrayAnnouncementStorage } from "@/storage/announcement-storage";
+import { CurvyWallet } from "@/wallet";
 import { expect, test } from "vitest";
-import { Core } from "../src/core/core";
-import { CurvyEventEmitter, SCAN_MATCH_EVENT, type ScanMatchEvent } from "../src/events";
 import AnnouncementScanner from "../src/scanner";
-import { ArrayAnnouncementStorage } from "../src/storage/announcement-storage";
-import { CurvyWallet } from "../src/wallet";
 import { mockPopulateAnnouncement } from "./utils/announcement-filler";
 
 test("should have one scanner match", async () => {

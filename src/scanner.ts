@@ -1,8 +1,8 @@
-import type { Core } from "./core/core";
+import type { RawAnnoucement } from "@/types/api";
+import type { Core } from "./core";
 import type { CurvyEventEmitter } from "./events";
 import CurvyStealthAddress from "./stealth-address";
 import type { AnnouncementStorageInterface } from "./storage/interface";
-import type { Announcement } from "./types";
 import type { CurvyWallet } from "./wallet";
 
 export default class AnnouncementScanner {
@@ -21,7 +21,7 @@ export default class AnnouncementScanner {
     return this.wallets;
   }
 
-  public async Scan(wallets: CurvyWallet[], announcements: Announcement[]) {
+  public async Scan(wallets: CurvyWallet[], announcements: RawAnnoucement[]) {
     const chunkSize = 250;
     let matched = 0;
 

@@ -1,20 +1,46 @@
 import type {
-  CreateAnnouncementParams,
-  CreateAnnouncementResponse,
-  GetAnnouncementsResponse,
-  Network,
-  ResolveUsernameResponse,
-} from "../types";
+  CreateAnnouncementRequestBody,
+  CreateAnnouncementReturnType,
+  GetAnnouncementEncryptedMessageRequestBody,
+  GetAnnouncementEncryptedMessageReturnType,
+  GetAnnouncementsReturnType,
+  GetCurvyHandleByOwnerAddressReturnType,
+  GetNetworksReturnType,
+  RegisterCurvyHandleRequestBody,
+  RegisterCurvyHandleReturnType,
+  ResolveCurvyHandleReturnType,
+  UpdateAnnouncementEncryptedMessageRequestBody,
+  UpdateAnnouncementEncryptedMessageReturnType,
+} from "@/types/api";
 
 export interface IAPIClient {
-  GetAnnouncements(
-    startTime: Date | undefined,
-    endTime: Date | undefined,
-    size: number,
-  ): Promise<GetAnnouncementsResponse>;
-  CreateAnnouncement(params: CreateAnnouncementParams): Promise<CreateAnnouncementResponse>;
-  GetNetworks(): Promise<Network[]>;
-  ResolveUsername(username: string): Promise<ResolveUsernameResponse>;
-  UpdateBearerToken(newBearerToken: string): void;
-  GetCurvyHandleByOwnerAddress(ownerAddress: string): Promise<string | undefined>;
+  announcement: {
+    CreateAnnouncement(body: CreateAnnouncementRequestBody): Promise<CreateAnnouncementReturnType>;
+    UpdateAnnouncementEncryptedMessage(
+      id: string,
+      body: UpdateAnnouncementEncryptedMessageRequestBody,
+    ): Promise<UpdateAnnouncementEncryptedMessageReturnType>;
+    GetAnnouncementEncryptedMessage(
+      body: GetAnnouncementEncryptedMessageRequestBody,
+    ): Promise<GetAnnouncementEncryptedMessageReturnType>;
+    GetAnnouncements(
+      startTime: Date | undefined,
+      endTime: Date | undefined,
+      size: number,
+    ): Promise<GetAnnouncementsReturnType>;
+  };
+
+  network: {
+    GetNetworks(): Promise<GetNetworksReturnType>;
+  };
+
+  user: {
+    RegisterCurvyHandle(body: RegisterCurvyHandleRequestBody): Promise<RegisterCurvyHandleReturnType>;
+    ResolveCurvyHandle(username: string): Promise<ResolveCurvyHandleReturnType>;
+    GetCurvyHandleByOwnerAddress(ownerAddress: string): Promise<GetCurvyHandleByOwnerAddressReturnType>;
+  };
+
+  auth: {
+    UpdateBearerToken(newBearerToken: string): void;
+  };
 }

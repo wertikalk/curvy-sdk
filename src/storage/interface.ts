@@ -1,4 +1,4 @@
-import type { Announcement } from "../types";
+import type { RawAnnoucement } from "@/types/api";
 
 export type AnnouncementQuery = {
   startTime?: Date;
@@ -9,7 +9,7 @@ export type AnnouncementQuery = {
 };
 
 export type AnnouncementQueryResult = {
-  announcements: Announcement[];
+  announcements: RawAnnoucement[];
   total: number;
   oldestTimestamp?: Date;
   newestTimestamp?: Date;
@@ -20,13 +20,13 @@ export interface AnnouncementStorageInterface {
    * Writes a single announcement to storage.
    * @throws {StorageError} If the announcement is invalid or write fails
    */
-  WriteAnnouncement(announcement: Announcement): Promise<void>;
+  WriteAnnouncement(announcement: RawAnnoucement): Promise<void>;
 
   /**
    * Writes multiple announcements to storage in a batch.
    * @throws {StorageError} If any announcement is invalid or write fails
    */
-  WriteManyAnnouncements(announcements: Announcement[]): Promise<void>;
+  WriteManyAnnouncements(announcements: RawAnnoucement[]): Promise<void>;
 
   /**
    * Retrieves announcements based on query parameters.

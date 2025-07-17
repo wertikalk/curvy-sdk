@@ -1,6 +1,7 @@
 import type { Address } from "viem";
 import type CurvyStealthAddress from "../stealth-address";
 import type { Network } from "../types";
+import type { StarknetFeeEstimate } from "./starknet";
 
 export default abstract class RPC {
   protected network: Network;
@@ -23,8 +24,7 @@ export default abstract class RPC {
     address: string,
     amount: string,
     currency: string,
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    fee?: any,
+    fee?: StarknetFeeEstimate | bigint,
   ): Promise<string>;
 
   abstract EstimateFee(
@@ -32,9 +32,7 @@ export default abstract class RPC {
     address: Address,
     amount: string,
     currency: string,
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  ): Promise<any>;
+  ): Promise<bigint | StarknetFeeEstimate>;
 
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  abstract FeeToAmount(feeEstimate: any): bigint;
+  abstract FeeToAmount(feeEstimate: StarknetFeeEstimate | bigint): bigint;
 }

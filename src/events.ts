@@ -1,6 +1,6 @@
+import type { RawAnnoucement } from "@/types/api";
 import EventEmitter from "eventemitter3";
 import type CurvyStealthAddress from "./stealth-address";
-import type { Announcement } from "./types";
 import type { CurvyWallet } from "./wallet";
 
 // Syncing events
@@ -10,7 +10,7 @@ export type SyncStartedEvent = {
 
 export type SyncProgressEvent = {
   synced: number;
-  announcements: Announcement[];
+  announcements: RawAnnoucement[];
   remaining: number;
 };
 

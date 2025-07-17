@@ -1,4 +1,4 @@
-import type { CurvyKeyPairs } from "./core/types";
+import type { CurvyKeyPairs } from "@/types/core";
 import type CurvyStealthAddress from "./stealth-address";
 
 export class CurvyWallet {

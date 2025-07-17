@@ -1,4 +1,4 @@
-import type { Network } from "../types";
+import type { Network } from "@/types/api";
 import type RPC from "./abstract";
 import EVMRPC from "./evm";
 import MultiRPC from "./multi";

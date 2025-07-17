@@ -203,14 +203,6 @@ export default class EVMRPC extends RPC {
     });
   }
 
-  // async SendToCurvyUser(
-  //   stealthAddress: CurvyStealthAddress,
-  //   handle: string,
-  //   amount: string,
-  //   currency: string,
-  // ): Promise<SendRawTransactionReturnType> {
-  //   return this._Send(stealthAddress, "" as Address, amount, currency);
-  // }
   async SendToAddress(
     stealthAddress: CurvyStealthAddress,
     address: string,

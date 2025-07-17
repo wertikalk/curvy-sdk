@@ -59,7 +59,7 @@ export class AnnouncementSyncer {
        *
        */
       while (totalProcessed < total) {
-        const response = await this.client.GetAnnouncements(startTime, endTime, SYNC_BATCH_SIZE);
+        const response = await this.client.announcement.GetAnnouncements(startTime, endTime, SYNC_BATCH_SIZE);
 
         if (syncJustStarted) {
           total = response.total;

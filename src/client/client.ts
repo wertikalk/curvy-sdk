@@ -1,193 +1,113 @@
-import { APIError } from "../errors";
+import { HttpClient } from "@/client/http";
+import type { IAPIClient } from "@/client/interface";
 import type {
-  Announcement,
-  AuthConfig,
-  CreateAnnouncementParams,
-  CreateAnnouncementResponse,
+  CreateAnnouncementRequestBody,
+  CreateAnnouncementReturnType,
+  GetAnnouncementEncryptedMessageRequestBody,
+  GetAnnouncementEncryptedMessageReturnType,
   GetAnnouncementsResponse,
-  GetUsernameByOwnerAddressResponse,
-  Network,
-  ResolveUsernameResponse,
-} from "../types";
-import { decimalStringToBytes } from "../utils/publicKeyEncoding";
-import { toSlug } from "../utils/slug";
-import type { IAPIClient } from "./interface";
+  GetCurvyHandleByOwnerAddressResponse,
+  NetworksWithCurrenciesResponse,
+  RegisterCurvyHandleRequestBody,
+  RegisterCurvyHandleReturnType,
+  ResolveCurvyHandleReturnType,
+  UpdateAnnouncementEncryptedMessageRequestBody,
+  UpdateAnnouncementEncryptedMessageReturnType,
+} from "@/types/api";
+import { toSlug } from "@/utils/slug";
 
-const DEFAULT_TIMEOUT = 5000;
+export class APIClient extends HttpClient implements IAPIClient {
+  announcement = {
+    CreateAnnouncement: async (body: CreateAnnouncementRequestBody) => {
+      return await this.request<CreateAnnouncementReturnType>({
+        method: "POST",
+        path: "/announcement",
+        body,
+      });
+    },
+    GetAnnouncements: async (startTime: Date | undefined, endTime: Date | undefined, size: number) => {
+      const queryParams: Record<string, string | number | boolean> = { size };
 
-type RequestOptions = {
-  method: string;
-  path: string;
-  body?: unknown;
-  timeout?: number;
-  queryParams?: Record<string, string | number | boolean>;
-};
-
-export class APIClient implements IAPIClient {
-  private apiKey?: string;
-  private bearerToken?: string;
-  private readonly apiBaseUrl: string;
-
-  constructor(authConfig: AuthConfig, apiBaseUrl?: string) {
-    // Ensure at least one authentication method is provided
-    if (!authConfig.apiKey && !authConfig.bearerToken) {
-      throw new Error("Either apiKey or bearerToken must be provided");
-    }
-
-    // Ensure only one authentication method is provided
-    if (authConfig.apiKey && authConfig.bearerToken) {
-      throw new Error("Cannot provide both apiKey and bearerToken, choose one");
-    }
-
-    this.apiKey = authConfig.apiKey;
-    this.bearerToken = authConfig.bearerToken;
-
-    this.apiBaseUrl = apiBaseUrl || "https://api.curvy.box";
-  }
-
-  // Method to update the bearer token (for token refresh scenarios)
-  public UpdateBearerToken(newBearerToken: string): void {
-    this.bearerToken = newBearerToken;
-    this.apiKey = undefined; // Clear API key when switching to bearer token
-  }
-
-  private getHeaders(): Record<string, string> {
-    const baseHeaders = {
-      "Content-Type": "application/json",
-      "User-Agent": "curvy-sdk",
-    };
-
-    if (this.bearerToken) {
-      return {
-        ...baseHeaders,
-        Authorization: `Bearer ${this.bearerToken}`,
-      };
-    }
-
-    if (this.apiKey) {
-      return {
-        ...baseHeaders,
-        "X-Curvy-API-Key": this.apiKey,
-      };
-    }
-
-    throw new Error("No authentication method available");
-  }
-
-  private async request<T>({ method, path, body, timeout = DEFAULT_TIMEOUT, queryParams }: RequestOptions): Promise<T> {
-    const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), timeout);
-
-    try {
-      const url = new URL(`${this.apiBaseUrl}${path}`);
-      if (queryParams) {
-        for (const [key, value] of Object.entries(queryParams)) {
-          url.searchParams.append(key, String(value));
-        }
+      if (startTime) {
+        queryParams.startTime = startTime.getTime();
+      }
+      if (endTime) {
+        queryParams.endTime = endTime.getTime();
       }
 
-      const response = await fetch(url.toString(), {
-        method,
-        headers: this.getHeaders(),
-        body: body ? JSON.stringify(body) : undefined,
-        signal: abortController.signal,
+      const result = await this.request<GetAnnouncementsResponse>({
+        method: "GET",
+        path: "/announcement",
+        queryParams,
       });
 
-      clearTimeout(timeoutId);
+      // const optimizedAnnouncements = result.announcements.map((announcement) => ({
+      //   ...announcement,
+      //   ephemeralPublicKey: decimalStringToBytes(announcement.ephemeralPublicKey),
+      // }));
 
-      let responseBody: { data?: T; error?: string };
-      try {
-        responseBody = await response.json();
-      } catch (e) {
-        throw new APIError("Invalid JSON response", response.status, await response.text());
-      }
+      // return { total: result.total, announcements: optimizedAnnouncements };
 
-      if (responseBody.error !== undefined && responseBody.data === undefined) {
-        throw new APIError(responseBody.error || `HTTP ${response.status}`, response.status, responseBody);
-      }
+      return result;
+    },
+    UpdateAnnouncementEncryptedMessage: async (id: string, body: UpdateAnnouncementEncryptedMessageRequestBody) => {
+      return await this.request<UpdateAnnouncementEncryptedMessageReturnType>({
+        method: "PATCH",
+        path: `/announcement/${id}/encryptedMessage`,
+        body,
+      });
+    },
+    GetAnnouncementEncryptedMessage: async (body: GetAnnouncementEncryptedMessageRequestBody) => {
+      return await this.request<GetAnnouncementEncryptedMessageReturnType>({
+        method: "GET",
+        path: "/announcement/{id}/encryptedMessage",
+        body,
+      });
+    },
+  };
 
-      if (responseBody.data === undefined) {
-        throw new APIError("Missing data in response", response.status, responseBody);
-      }
+  network = {
+    GetNetworks: async () => {
+      const networks = await this.request<NetworksWithCurrenciesResponse>({
+        method: "GET",
+        path: "/currency/latest",
+      });
 
-      return responseBody.data;
-    } catch (error) {
-      if (error instanceof APIError) {
-        throw error;
-      }
+      return networks.map((network) => {
+        return { ...network, rpcUrl: `${this.apiBaseUrl}/rpc/${toSlug(network.name)}` };
+      });
+    },
+  };
 
-      throw new APIError(`Request failed: ${(error as Error).message}`, undefined, error);
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  }
+  user = {
+    RegisterCurvyHandle: async (body: RegisterCurvyHandleRequestBody) => {
+      return await this.request<RegisterCurvyHandleReturnType>({
+        method: "POST",
+        path: "/user/register",
+        body,
+      });
+    },
 
-  public async CreateAnnouncement(data: CreateAnnouncementParams): Promise<CreateAnnouncementResponse> {
-    return await this.request<CreateAnnouncementResponse>({
-      method: "POST",
-      path: "/announcement",
-      body: data,
-    });
-  }
+    ResolveCurvyHandle: async (username: string) => {
+      return this.request<ResolveCurvyHandleReturnType>({
+        method: "GET",
+        path: `/user/resolve/${username}`,
+      });
+    },
 
-  // GetAnnouncements will fetch the announcements from a defined offset and size
-  public async GetAnnouncements(
-    startTime: Date | undefined,
-    endTime: Date | undefined,
-    size: number,
-  ): Promise<GetAnnouncementsResponse> {
-    const queryParams: Record<string, string | number | boolean> = { size };
+    GetCurvyHandleByOwnerAddress: async (ownerAddress: string) => {
+      const response = await this.request<GetCurvyHandleByOwnerAddressResponse>({
+        method: "GET",
+        path: `/user/check/${ownerAddress}`,
+      });
 
-    if (startTime) {
-      queryParams.startTime = startTime.getTime();
-    }
-    if (endTime) {
-      queryParams.endTime = endTime.getTime();
-    }
+      return response?.handle || null;
+    },
+  };
 
-    const result = await this.request<GetAnnouncementsResponse>({
-      method: "GET",
-      path: "/announcement",
-      queryParams,
-    });
-
-    result.announcements = result.announcements.map((a: Announcement) => ({
-      ...a,
-      ephemeralPublicKey: decimalStringToBytes(a.ephemeralPublicKey),
-    }));
-
-    return result;
-  }
-
-  // GetNetworks will return the list of supported networks with currencies
-  public async GetNetworks(): Promise<Network[]> {
-    const networks = await this.request<Network[]>({
-      method: "GET",
-      path: "/currency/latest",
-    });
-
-    return networks.map((network) => {
-      if (!network.rpcUrl) {
-        network.rpcUrl = `${this.apiBaseUrl}/rpc/${toSlug(network.name)}`;
-      }
-
-      return network;
-    });
-  }
-
-  public async ResolveUsername(username: string) {
-    return this.request<ResolveUsernameResponse>({
-      method: "GET",
-      path: `/user/resolve/${username}`,
-    });
-  }
-
-  public async GetCurvyHandleByOwnerAddress(ownerAddress: string): Promise<string | undefined> {
-    const response = await this.request<GetUsernameByOwnerAddressResponse>({
-      method: "GET",
-      path: `/user/check/${ownerAddress}`,
-    });
-
-    return response?.handle;
-  }
+  auth = {
+    UpdateBearerToken: async (newBearerToken: string) => {
+      return this.UpdateBearerToken(newBearerToken);
+    },
+  };
 }

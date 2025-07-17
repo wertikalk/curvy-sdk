@@ -1,13 +1,14 @@
-import { StorageError } from "../errors";
-import type { Announcement } from "../types";
+import { StorageError } from "@/errors";
+import type { OptimizedAnnouncement, RawAnnoucement } from "@/types/api";
+import { bytesToDecimalString, decimalStringToBytes } from "@/utils/publicKeyEncoding";
 import type { AnnouncementQuery, AnnouncementQueryResult, AnnouncementStorageInterface } from "./interface";
 
 export class ArrayAnnouncementStorage implements AnnouncementStorageInterface {
-  private announcements: Map<string, Announcement> = new Map();
+  private announcements: Map<string, OptimizedAnnouncement> = new Map();
   private earliestTimestamp: Date | undefined;
   private latestTimestamp: Date | undefined;
 
-  async WriteAnnouncement(announcement: Announcement): Promise<void> {
+  async WriteAnnouncement(announcement: RawAnnoucement): Promise<void> {
     try {
       if (!announcement.id || !announcement.createdAt) {
         // noinspection ExceptionCaughtLocallyJS
@@ -24,14 +25,19 @@ export class ArrayAnnouncementStorage implements AnnouncementStorageInterface {
         this.latestTimestamp = timestamp;
       }
 
-      this.announcements.set(announcement.id, announcement);
+      const optimizedAnnouncement = {
+        ...announcement,
+        ephemeralPublicKey: decimalStringToBytes(announcement.ephemeralPublicKey),
+      } satisfies OptimizedAnnouncement;
+
+      this.announcements.set(announcement.id, optimizedAnnouncement);
     } catch (error) {
       if (error instanceof StorageError) throw error;
       throw new StorageError("Failed to write announcement", error as Error);
     }
   }
 
-  async WriteManyAnnouncements(announcements: Announcement[]): Promise<void> {
+  async WriteManyAnnouncements(announcements: RawAnnoucement[]): Promise<void> {
     try {
       for (const announcement of announcements) {
         await this.WriteAnnouncement(announcement);
@@ -70,7 +76,10 @@ export class ArrayAnnouncementStorage implements AnnouncementStorageInterface {
 
       // TODO: Think about the returned object, why oldest & newwest?
       return {
-        announcements: filtered,
+        announcements: filtered.map((announcement) => ({
+          ...announcement,
+          ephemeralPublicKey: bytesToDecimalString(announcement.ephemeralPublicKey),
+        })),
         total,
         oldestTimestamp,
         newestTimestamp,

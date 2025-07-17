@@ -1,4 +1,5 @@
-import type { Network, NetworkFlavour } from "./types";
+import type { NetworkFlavour } from "@/types";
+import type { Network } from "@/types/api";
 import { deriveAddress } from "./utils/deriveAddress";
 import { toSlug } from "./utils/slug";
 

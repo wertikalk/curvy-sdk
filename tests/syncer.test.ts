@@ -1,4 +1,3 @@
-import { expect, test } from "vitest";
 import {
   CurvyEventEmitter,
   SYNC_COMPLETE_EVENT,
@@ -9,9 +8,10 @@ import {
   type SyncErrorEvent,
   type SyncProgressEvent,
   type SyncStartedEvent,
-} from "../src/events";
-import { ArrayAnnouncementStorage } from "../src/storage/announcement-storage";
-import { AnnouncementSyncer } from "../src/syncer";
+} from "@/events";
+import { ArrayAnnouncementStorage } from "@/storage/announcement-storage";
+import { AnnouncementSyncer } from "@/syncer";
+import { expect, test } from "vitest";
 import { MockAPIClient } from "./mocks/mock-client";
 
 test("should emit sync events", async () => {

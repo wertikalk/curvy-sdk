@@ -1,11 +1,12 @@
 import { getAddress } from "viem";
 
+import type { StarknetFeeEstimate } from "@/rpc/starknet";
+import type { Currency, Network } from "@/types/api";
 import { Signature } from "ethers";
 import { APIClient } from "./client/client";
-import type { IAPIClient } from "./client/interface";
 import { getSignatureParams as evmGetSignatureParams } from "./constants/evm";
 import { getSignatureParams as starknetGetSignatureParams } from "./constants/starknet";
-import { Core } from "./core/core";
+import { Core } from "./core";
 import {
   CurvyEventEmitter,
   SCAN_COMPLETE_EVENT,
@@ -30,7 +31,7 @@ import type CurvyStealthAddress from "./stealth-address";
 import { ArrayAnnouncementStorage } from "./storage/announcement-storage";
 import type { AnnouncementStorageInterface } from "./storage/interface";
 import { AnnouncementSyncer } from "./syncer";
-import type { AuthConfig, Currency, Network, NetworkFlavour } from "./types";
+import type { AuthConfig, NetworkFlavour } from "./types";
 import { arrayBufferToHex } from "./utils/arrayBuffer";
 import { deriveAddress } from "./utils/deriveAddress";
 import { computePrivateKeys } from "./utils/keyComputation";
@@ -38,12 +39,12 @@ import { type NetworkFilter, filterNetworks } from "./utils/network";
 import { CurvyWallet } from "./wallet";
 
 export class CurvySDK {
-  private readonly client: IAPIClient;
-  private networks: Network[] = [];
-  private readonly announcementStorage: AnnouncementStorageInterface;
+  private readonly client: APIClient;
   private readonly emitter: CurvyEventEmitter;
+  private readonly announcementStorage: AnnouncementStorageInterface;
   private syncer: AnnouncementSyncer;
   private scanner: AnnouncementScanner;
+  private networks: Network[] = [];
   public core: Core = new Core();
   public RPC: MultiRPC | undefined;
 
@@ -72,11 +73,11 @@ export class CurvySDK {
 
   // Method to update the bearer token (useful for token refresh)
   public updateBearerToken(newBearerToken: string): void {
-    this.client.UpdateBearerToken(newBearerToken);
+    this.client.auth.UpdateBearerToken(newBearerToken);
   }
 
   public async init(networkFilter: NetworkFilter | undefined, wasmUrl?: string): Promise<void> {
-    this.networks = await this.client.GetNetworks();
+    this.networks = await this.client.network.GetNetworks();
 
     if (networkFilter === undefined) {
       await this.SetActiveNetworks(true as NetworkFilter); // testnets only
@@ -139,7 +140,7 @@ export class CurvySDK {
   }
 
   public async GetNewStealthAddressForUser(networkIdentifier: NetworkFilter, handle: string): Promise<`0x${string}`> {
-    const recipientDetails = await this.client.ResolveUsername(handle);
+    const recipientDetails = await this.client.user.ResolveCurvyHandle(handle);
 
     if (!recipientDetails) {
       throw new Error(`Handle ${handle} not found`);
@@ -159,7 +160,7 @@ export class CurvySDK {
 
     if (!derivedAddress) throw new Error("Couldn't derive address!");
 
-    const response = await this.client.CreateAnnouncement({
+    const response = await this.client.announcement.CreateAnnouncement({
       recipientStealthAddress: derivedAddress,
       recipientStealthPublicKey,
       network_id: network.id,
@@ -167,7 +168,7 @@ export class CurvySDK {
       viewTag: viewTag,
     });
 
-    if (response.data?.message !== "Saved") throw new Error("Failed to register announcement");
+    if (response.message !== "Saved") throw new Error("Failed to register announcement");
 
     return derivedAddress;
   }
@@ -178,7 +179,7 @@ export class CurvySDK {
     to: string,
     amount: string,
     currency: string,
-    fee: unknown,
+    fee: StarknetFeeEstimate | bigint,
   ) {
     let toAddress = to;
 
@@ -301,13 +302,13 @@ export class CurvySDK {
 
     const keyPairs = { s, v, S, V };
 
-    const curvyHandle = await this.client.GetCurvyHandleByOwnerAddress(address);
+    const curvyHandle = await this.client.user.GetCurvyHandleByOwnerAddress(address);
 
     if (!curvyHandle) {
       throw new Error(`No Curvy handle found for owner address: ${ownerAddress}`);
     }
 
-    const ownerDetails = await this.client.ResolveUsername(curvyHandle);
+    const ownerDetails = await this.client.user.ResolveCurvyHandle(curvyHandle);
 
     if (!ownerDetails) throw new Error(`Handle ${curvyHandle} does not exist.`);
 

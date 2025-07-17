@@ -2,7 +2,6 @@ import { CurvySDK } from "./sdk";
 import type { AuthConfig } from "./types";
 import type { NetworkFilter } from "./utils/network";
 
-// Single init function that supports both authentication methods
 export const init = async (
   authConfig: AuthConfig,
   apiBaseUrl?: string,
@@ -16,5 +15,4 @@ export const init = async (
   return sdk;
 };
 
-// Export main classes and types
 export { CurvySDK };

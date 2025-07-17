@@ -1,7 +1,7 @@
 {
   "name": "@0xcurvy/curvy-sdk",
   "license": "MIT",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "repository": "https://github.com/0xCurvy/curvy-sdk",
   "type": "module",
   "main": "./dist/esm/index.js",

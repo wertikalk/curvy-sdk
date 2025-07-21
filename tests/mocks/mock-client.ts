@@ -98,9 +98,7 @@ export class MockAPIClient implements IAPIClient {
     ): Promise<UpdateAnnouncementEncryptedMessageReturnType> => {
       throw new Error("Method not implemented.");
     },
-    GetAnnouncementEncryptedMessage: async (body: {
-      id: string;
-    }): Promise<GetAnnouncementEncryptedMessageReturnType> => {
+    GetAnnouncementEncryptedMessage: async (id: string): Promise<GetAnnouncementEncryptedMessageReturnType> => {
       throw new Error("Method not implemented.");
     },
   };

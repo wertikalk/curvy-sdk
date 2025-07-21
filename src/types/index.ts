@@ -6,6 +6,12 @@ export type ScannedAnnouncement = RawAnnoucement & {
   recipientStealthPublicKey: string;
 };
 
+export type AnnouncementBase = {
+  ephemeralPublicKey: string;
+  viewTag: string;
+  recipientStealthPublicKey: string;
+};
+
 export type NetworkFlavour = "evm" | "starknet";
 export type NetworkGroup = "Ethereum" | "Starknet" | "Arbitrum";
 

@@ -1,6 +1,6 @@
+import type { Network } from "@/types/api";
 import type { Address } from "viem";
 import type CurvyStealthAddress from "../stealth-address";
-import type { Network } from "../types";
 import type { StarknetFeeEstimate } from "./starknet";
 
 export default abstract class RPC {

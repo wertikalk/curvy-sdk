@@ -1,7 +1,6 @@
 import type {
   CreateAnnouncementRequestBody,
   CreateAnnouncementReturnType,
-  GetAnnouncementEncryptedMessageRequestBody,
   GetAnnouncementEncryptedMessageReturnType,
   GetAnnouncementsReturnType,
   GetCurvyHandleByOwnerAddressReturnType,
@@ -20,9 +19,7 @@ export interface IAPIClient {
       id: string,
       body: UpdateAnnouncementEncryptedMessageRequestBody,
     ): Promise<UpdateAnnouncementEncryptedMessageReturnType>;
-    GetAnnouncementEncryptedMessage(
-      body: GetAnnouncementEncryptedMessageRequestBody,
-    ): Promise<GetAnnouncementEncryptedMessageReturnType>;
+    GetAnnouncementEncryptedMessage(id: string): Promise<GetAnnouncementEncryptedMessageReturnType>;
     GetAnnouncements(
       startTime: Date | undefined,
       endTime: Date | undefined,

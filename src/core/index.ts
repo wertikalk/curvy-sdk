@@ -1,5 +1,4 @@
 import "./wasm-exec.js";
-import type { AnnouncementBase } from "@/types";
 
 import type { RawAnnoucement } from "@/types/api";
 import type {
@@ -124,7 +123,7 @@ class Core {
         ephemeralPublicKey: result.R,
         viewTag: result.viewTag,
         recipientStealthPublicKey: result.spendingPubKey,
-      } satisfies AnnouncementBase,
+      },
       ephemeralPrivateKey: result.r,
     };
   }

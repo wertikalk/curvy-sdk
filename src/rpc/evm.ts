@@ -1,3 +1,4 @@
+import { evmMulticall3Abi } from "@/contracts/evm/abi/multicall3";
 import {
   http,
   type Address,
@@ -16,7 +17,6 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { getBalance, readContract } from "viem/actions";
-import { evmMulticall3Abi } from "../contracts/evm/abi/multicall3";
 import type CurvyStealthAddress from "../stealth-address";
 import RPC from "./abstract";
 

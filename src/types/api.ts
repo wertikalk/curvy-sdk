@@ -88,9 +88,6 @@ type UpdateAnnouncementEncryptedMessageReturnType = {
   message?: string;
 };
 
-type GetAnnouncementEncryptedMessageRequestBody = {
-  id: string;
-};
 type GetAnnouncementEncryptedMessageReturnType = {
   encryptedMessage: string;
   encryptedMessageSenderPublicKey: string;
@@ -138,7 +135,6 @@ export type {
   OptimizedAnnouncement,
   UpdateAnnouncementEncryptedMessageRequestBody,
   UpdateAnnouncementEncryptedMessageReturnType,
-  GetAnnouncementEncryptedMessageRequestBody,
   GetAnnouncementEncryptedMessageReturnType,
   Network,
   Currency,

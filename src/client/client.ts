@@ -3,7 +3,6 @@ import type { IAPIClient } from "@/client/interface";
 import type {
   CreateAnnouncementRequestBody,
   CreateAnnouncementReturnType,
-  GetAnnouncementEncryptedMessageRequestBody,
   GetAnnouncementEncryptedMessageReturnType,
   GetAnnouncementsResponse,
   GetCurvyHandleByOwnerAddressResponse,
@@ -57,11 +56,10 @@ export class APIClient extends HttpClient implements IAPIClient {
         body,
       });
     },
-    GetAnnouncementEncryptedMessage: async (body: GetAnnouncementEncryptedMessageRequestBody) => {
+    GetAnnouncementEncryptedMessage: async (id: string) => {
       return await this.request<GetAnnouncementEncryptedMessageReturnType>({
         method: "GET",
         path: "/announcement/{id}/encryptedMessage",
-        body,
       });
     },
   };

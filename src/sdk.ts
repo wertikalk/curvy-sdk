@@ -30,7 +30,8 @@ import type CurvyStealthAddress from "./stealth-address";
 import { ArrayAnnouncementStorage } from "./storage/announcement-storage";
 import type { AnnouncementStorageInterface } from "./storage/interface";
 import { AnnouncementSyncer } from "./syncer";
-import type { AuthConfig, Currency, Network, NetworkFlavour } from "./types";
+import type { Currency, Network, NetworkFlavour } from "./types";
+import { signJwtNonce } from "./utils";
 import { arrayBufferToHex } from "./utils/arrayBuffer";
 import { deriveAddress } from "./utils/deriveAddress";
 import { computePrivateKeys } from "./utils/keyComputation";
@@ -47,18 +48,8 @@ export class CurvySDK {
   public core: Core = new Core();
   public RPC: MultiRPC | undefined;
 
-  constructor(authConfig: AuthConfig, apiBaseUrl?: string, announcementStorage?: AnnouncementStorageInterface) {
-    // Ensure at least one authentication method is provided
-    if (!authConfig.apiKey && !authConfig.bearerToken) {
-      throw new Error("Either apiKey or bearerToken must be provided");
-    }
-
-    // Ensure only one authentication method is provided
-    if (authConfig.apiKey && authConfig.bearerToken) {
-      throw new Error("Cannot provide both apiKey and bearerToken, choose one");
-    }
-
-    this.client = new APIClient(authConfig, apiBaseUrl);
+  constructor(apiKey: string, apiBaseUrl?: string, announcementStorage?: AnnouncementStorageInterface) {
+    this.client = new APIClient(apiKey, apiBaseUrl);
     this.announcementStorage = announcementStorage ?? new ArrayAnnouncementStorage();
     this.emitter = new CurvyEventEmitter();
     this.syncer = new AnnouncementSyncer(this.announcementStorage, this.client, this.emitter);
@@ -167,7 +158,7 @@ export class CurvySDK {
       viewTag: viewTag,
     });
 
-    if (response.data?.message !== "Saved") throw new Error("Failed to register announcement");
+    if (response?.message !== "Saved") throw new Error("Failed to register announcement");
 
     return derivedAddress;
   }
@@ -313,6 +304,12 @@ export class CurvySDK {
 
     if (!ownerDetails.publicKeys.some(({ viewingKey: V, spendingKey: S }) => V === keyPairs.V && S === keyPairs.S))
       throw new Error(`Wrong password for handle ${curvyHandle}.`);
+
+    this.updateBearerToken(
+      await this.client.GetBearerTotp().then((nonce) => {
+        return this.client.CreateBearerToken({ nonce, signature: signJwtNonce(nonce, keyPairs.s) });
+      }),
+    );
 
     const wallet = new CurvyWallet(curvyHandle, address, keyPairs);
 

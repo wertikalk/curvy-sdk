@@ -423,13 +423,7 @@ if (networkToNetworkFilterMapping[network] !== undefined) {
   selectedNetworkFilter = network;
 }
 
-window.curvySDK = await init(
-  {
-    apiKey,
-  },
-  apiBaseUrl,
-  selectedNetworkFilter,
-);
+window.curvySDK = await init(apiKey, apiBaseUrl, selectedNetworkFilter);
 
 // Get networks from the SDK
 const networks = await window.curvySDK.GetNetworks();

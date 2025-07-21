@@ -15,6 +15,12 @@ export interface IAPIClient {
   CreateAnnouncement(params: CreateAnnouncementParams): Promise<CreateAnnouncementResponse>;
   GetNetworks(): Promise<Network[]>;
   ResolveUsername(username: string): Promise<ResolveUsernameResponse>;
-  UpdateBearerToken(newBearerToken: string): void;
   GetCurvyHandleByOwnerAddress(ownerAddress: string): Promise<string | undefined>;
+  UpdateBearerToken(newBearerToken: string): void;
+  GetBearerTotp(): Promise<string>;
+  CreateBearerToken(body: {
+    nonce: string;
+    signature: string;
+  }): Promise<string>;
+  RefreshBearerToken(): Promise<string>;
 }

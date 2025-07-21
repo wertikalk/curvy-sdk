@@ -126,4 +126,13 @@ export class MockAPIClient implements IAPIClient {
   UpdateBearerToken(newBearerToken: string): void {
     // Mock implementation: does nothing
   }
+  GetBearerTotp(): Promise<string> {
+    throw new Error("Method not implemented.");
+  }
+  CreateBearerToken(body: { nonce: string; signature: string }): Promise<string> {
+    throw new Error("Method not implemented.");
+  }
+  RefreshBearerToken(): Promise<string> {
+    throw new Error("Method not implemented.");
+  }
 }

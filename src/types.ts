@@ -71,7 +71,7 @@ export type CreateAnnouncementParams = {
   recipientStealthPublicKey: string;
   viewTag: string;
 };
-export type CreateAnnouncementResponse = { data?: { id: string; message: string }; error?: string | null };
+export type CreateAnnouncementResponse = { id: string; message: string };
 
 export type ResolveUsernameResponse = {
   createdAt: string;
@@ -85,9 +85,4 @@ export type GetAnnouncementsResponse = {
 
 export type GetUsernameByOwnerAddressResponse = {
   handle: string | undefined;
-};
-
-export type AuthConfig = {
-  apiKey?: string;
-  bearerToken?: string;
 };

@@ -86,7 +86,7 @@ export async function loadWasm(wasmUrl?: string): Promise<void> {
   if (wasmUrl) {
     instance = (await WebAssembly.instantiateStreaming(fetch(wasmUrl), go.importObject)).instance;
   } else {
-    const { default: init } = await import(`./curvy-core-v1.0.2.wasm?init`);
+    const { default: init } = await import("./curvy-core-v1.0.2.wasm?init");
     instance = await init(go.importObject);
   }
   go.run(instance);

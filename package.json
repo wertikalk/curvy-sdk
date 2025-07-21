@@ -33,8 +33,7 @@
         "lint": "biome lint --write ./src",
         "check:packages": "pnpm up --latest --interactive",
         "prepublishOnly": "pnpm run build",
-        "test": "vitest run",
-        "postinstall": "husky"
+        "test": "vitest run"
     },
     "devDependencies": {
         "@biomejs/biome": "1.9.4",
@@ -43,7 +42,6 @@
         "@commitlint/types": "^19.8.1",
         "commitizen": "^4.3.1",
         "cz-conventional-changelog": "^3.3.0",
-        "husky": "^9.1.7",
         "lint-staged": "^16.1.0",
         "rimraf": "^6.0.1",
         "tsup": "8.5.0",

@@ -184,8 +184,37 @@
                     </div>
                     </aside>
                     <main>
+                
                         <fieldset>
-                            <legend>Send funds</legend>
+                        <menu role="tablist">
+
+                                <li
+                                        role="tab"
+                                        aria-selected="true"
+                                        data-tab-id="xxx"
+                                        onclick="showTabContent('announcementsTab')"
+                                    >
+                                        <img
+                                            src="https://win98icons.alexmeub.com/icons/png/users_key-1.png"
+                                            alt="Key Icon"
+                                            style="width: 12px; height: 12px; margin-right: 4px"
+                                        />
+                                        Send Funds
+                                </li>
+                                <li
+                                        role="tab"
+                                        aria-selected="false"
+                                        data-tab-id="xxx"
+                                        onclick="showTabContent('announcementsTab')"
+                                    >
+                                        <img
+                                            src="https://win98icons.alexmeub.com/icons/png/users_key-1.png"
+                                            alt="Key Icon"
+                                            style="width: 12px; height: 12px; margin-right: 4px"
+                                        />
+                                        CSUC
+                                </li>
+                                     </menu>
                                 <div class="field-row">
                                     <label for="fromAddress">From:</label>
                                     <input
@@ -232,6 +261,8 @@
                                 <button onClick="estimateFee()" id="estimate-fee" disabled>Estimate fees</button>
                                 <button onClick="send2()" id="send" disabled>Send</button>
                         </fieldset>
+                     
+               
                         <fieldset>
                             <legend>Resolve Curvy handle to stealth address</legend>
                             <div class="field-row">

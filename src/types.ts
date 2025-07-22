@@ -141,9 +141,4 @@ export type AggregationRequest = {
   aggregationGroupId: string;
 };
 
-export type AggregatorRequestStatus =
-  | 'pending'
-  | 'submitting'
-  | 'success'
-  | 'failed'
-  | 'cancelled';
+export type AggregatorRequestStatus = "pending" | "submitting" | "success" | "failed" | "cancelled";

@@ -38,7 +38,7 @@ import type {
   DepositPayload,
   Network,
   NetworkFlavour,
-  WithdrawPayload
+  WithdrawPayload,
 } from "./types";
 import { arrayBufferToHex } from "./utils/arrayBuffer";
 import { deriveAddress } from "./utils/deriveAddress";
@@ -183,7 +183,7 @@ export class CurvySDK {
     return await this.client.SubmitAggregation(payload);
   }
 
-  public async GetRequestStatus(requestId: string): Promise<{requestId: string; status: AggregatorRequestStatus}>{
+  public async GetRequestStatus(requestId: string): Promise<{ requestId: string; status: AggregatorRequestStatus }> {
     return await this.client.GetRequestStatus(requestId);
   }
 

@@ -7,8 +7,10 @@ import type {
   GetUsernameByOwnerAddressResponse,
   Network,
   ResolveUsernameResponse,
-  DepositPayload, WithdrawPayload, AggregationRequest,
-  AggregatorRequestStatus
+  DepositPayload,
+  WithdrawPayload,
+  AggregationRequest,
+  AggregatorRequestStatus,
 } from "../types";
 import { decimalStringToBytes } from "../utils/publicKeyEncoding";
 import { toSlug } from "../utils/slug";

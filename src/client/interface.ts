@@ -1,11 +1,13 @@
 import type {
   AggregationRequest,
   CreateAnnouncementParams,
-  CreateAnnouncementResponse, DepositPayload,
+  CreateAnnouncementResponse,
+  DepositPayload,
   GetAnnouncementsResponse,
   Network,
-  ResolveUsernameResponse, WithdrawPayload,
-  AggregatorRequestStatus
+  ResolveUsernameResponse,
+  WithdrawPayload,
+  AggregatorRequestStatus,
 } from "../types";
 
 export interface IAPIClient {

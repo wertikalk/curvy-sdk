@@ -26,35 +26,30 @@ import {
 } from "./events";
 import { NewMultiRPC } from "./rpc/factory";
 import type MultiRPC from "./rpc/multi";
-import AnnouncementScanner from "./scanner";
 import type CurvyStealthAddress from "./stealth-address";
 import { ArrayAnnouncementStorage } from "./storage/announcement-storage";
 import type { AnnouncementStorageInterface } from "./storage/interface";
-import { AnnouncementSyncer } from "./syncer";
 import type { AuthConfig, NetworkFlavour } from "./types";
 import { arrayBufferToHex } from "./utils/arrayBuffer";
 import { deriveAddress } from "./utils/deriveAddress";
 import { computePrivateKeys } from "./utils/keyComputation";
 import { type NetworkFilter, filterNetworks } from "./utils/network";
 import { CurvyWallet } from "./wallet";
+import { WalletManager } from "./wallet-manager";
 
 export class CurvySDK {
   private readonly client: APIClient;
   private readonly emitter: CurvyEventEmitter;
   private readonly announcementStorage: AnnouncementStorageInterface;
-  private syncer: AnnouncementSyncer;
-  private scanner: AnnouncementScanner;
+  private walletManager: WalletManager;
   private networks: Network[] = [];
   public core: Core = new Core();
   public RPC: MultiRPC | undefined;
 
   constructor(authConfig: AuthConfig, apiBaseUrl?: string, announcementStorage?: AnnouncementStorageInterface) {
-    // Ensure at least one authentication method is provided
     if (!authConfig.apiKey && !authConfig.bearerToken) {
       throw new Error("Either apiKey or bearerToken must be provided");
     }
-
-    // Ensure only one authentication method is provided
     if (authConfig.apiKey && authConfig.bearerToken) {
       throw new Error("Cannot provide both apiKey and bearerToken, choose one");
     }
@@ -62,16 +57,9 @@ export class CurvySDK {
     this.client = new APIClient(authConfig, apiBaseUrl);
     this.announcementStorage = announcementStorage ?? new ArrayAnnouncementStorage();
     this.emitter = new CurvyEventEmitter();
-    this.syncer = new AnnouncementSyncer(this.announcementStorage, this.client, this.emitter);
-    this.scanner = new AnnouncementScanner(this.announcementStorage, this.core, this.emitter);
-
-    // Trigger scan on each new sync progress
-    this.emitter.on(SYNC_PROGRESS_EVENT, async (event: SyncProgressEvent) => {
-      await this.scanner.Scan(this.scanner.GetWallets(), event.announcements);
-    });
+    this.walletManager = new WalletManager(this.announcementStorage, this.client, this.emitter, this.core);
   }
 
-  // Method to update the bearer token (useful for token refresh)
   public updateBearerToken(newBearerToken: string): void {
     this.client.auth.UpdateBearerToken(newBearerToken);
   }
@@ -80,39 +68,29 @@ export class CurvySDK {
     this.networks = await this.client.network.GetNetworks();
 
     if (networkFilter === undefined) {
-      await this.SetActiveNetworks(true as NetworkFilter); // testnets only
+      await this.SetActiveNetworks(true as NetworkFilter);
     } else {
       await this.SetActiveNetworks(networkFilter);
     }
 
     await Core.init(wasmUrl);
-    this.syncer.Start().then((r) => {});
-  }
-
-  public GetNetworkAndCurrencyFromBalanceIdentifier(
-    balanceIdentifier: `${string}:${string}`,
-  ): [Network, Currency] | undefined {
-    const [networkSlug, currencySymbol] = balanceIdentifier.split(":");
-    const networks = this.GetNetworks(networkSlug);
-    if (networks.length !== 1) {
-      return undefined;
-    }
-
-    const currency = networks[0].currencies.find((c) => c.symbol === currencySymbol);
-
-    if (!currency) {
-      return undefined;
-    }
-
-    return [networks[0], currency];
+    this.walletManager.StartSync();
   }
 
   public GetWallets(): CurvyWallet[] {
-    return this.scanner.GetWallets();
+    return this.walletManager.GetWallets();
+  }
+
+  public async SyncOnce(): Promise<void> {
+    await this.walletManager.SyncOnce();
+  }
+
+  public StartSync(): void {
+    this.walletManager.StartSync();
   }
 
   public GetStealthAddress(address: string): CurvyStealthAddress | undefined {
-    for (const wallet of this.scanner.GetWallets()) {
+    for (const wallet of this.GetWallets()) {
       for (const stealthAddress of wallet.stealthAddresses) {
         if (stealthAddress.address === address) {
           return stealthAddress;
@@ -141,13 +119,11 @@ export class CurvySDK {
 
   public async GetNewStealthAddressForUser(networkIdentifier: NetworkFilter, handle: string): Promise<`0x${string}`> {
     const recipientDetails = await this.client.user.ResolveCurvyHandle(handle);
-
     if (!recipientDetails) {
       throw new Error(`Handle ${handle} not found`);
     }
 
     const { spendingKey, viewingKey } = recipientDetails.publicKeys[0];
-
     const {
       announcement: { recipientStealthPublicKey, ephemeralPublicKey, viewTag },
     } = this.core.send(spendingKey, viewingKey) as {
@@ -155,9 +131,7 @@ export class CurvySDK {
     };
 
     const network = this.GetNetwork(networkIdentifier);
-
     const derivedAddress = deriveAddress(recipientStealthPublicKey, network.flavour);
-
     if (!derivedAddress) throw new Error("Couldn't derive address!");
 
     const response = await this.client.announcement.CreateAnnouncement({
@@ -200,7 +174,6 @@ export class CurvySDK {
     this.RPC = await NewMultiRPC(networks);
   }
 
-  // GetAnnouncements retrieves announcements from storage based on query parameters
   public async GetAnnouncements(query: {
     startTime?: Date;
     endTime?: Date;
@@ -212,36 +185,25 @@ export class CurvySDK {
   }
 
   public GetNativeCurrencyForNetwork(network: Network): Currency {
-    //TODO: Don't do starknet specific like this
     if (network.flavour === "starknet") {
-      const currency = network.currencies.find(({ symbol }) => {
-        return symbol === "STRK";
-      });
-
-      if (currency) {
-        return currency;
-      }
+      const currency = network.currencies.find(({ symbol }) => symbol === "STRK");
+      if (currency) return currency;
       throw new Error(`No native currency found for network ${network.name}`);
     }
 
     const currency = network.currencies.find(({ contract_address }) => contract_address === undefined);
-
-    if (!currency) {
-      throw new Error(`No native currency found for network ${network.name}`);
-    }
-
+    if (!currency) throw new Error(`No native currency found for network ${network.name}`);
     return currency;
   }
 
   public async GetSignatureParamsForNetworkFlavour(flavour: NetworkFlavour, ownerAddress: string, password: string) {
     const encoder = new TextEncoder();
-
     let address = ownerAddress;
 
     if (flavour === "evm") {
-      address = getAddress(ownerAddress); // If it's EVM connection, do EIP-55 checksum of address
+      address = getAddress(ownerAddress);
     } else if (flavour === "starknet") {
-      address = `0x${ownerAddress.replace("0x", "").padStart(64, "0")}`; // If it's Starknet, pad with 0s up to 64 chars
+      address = `0x${ownerAddress.replace("0x", "").padStart(64, "0")}`;
     }
 
     const preimage = `${address}::${password}`;
@@ -267,21 +229,16 @@ export class CurvySDK {
     let sigR: bigint = BigInt(0);
     let address = ownerAddress;
 
-    // If is array, then we are parsing Starknet signatures
     if (Array.isArray(rawSignature)) {
-      // TODO: Dedupe
-      address = `0x${ownerAddress.replace("0x", "").padStart(64, "0")}`; // If it's Starknet, pad with 0s up to 64 chars
-
+      address = `0x${ownerAddress.replace("0x", "").padStart(64, "0")}`;
       if (rawSignature.length === 2) {
         sigR = BigInt(rawSignature[0]);
         sigS = BigInt(rawSignature[1]);
       }
-
       if (rawSignature.length === 5) {
         sigR = BigInt(rawSignature[3]);
         sigS = BigInt(rawSignature[4]);
       }
-
       if (rawSignature.length === 3) {
         sigR = BigInt(rawSignature[1]);
         sigS = BigInt(rawSignature[2]);
@@ -297,19 +254,13 @@ export class CurvySDK {
     }
 
     const [s, v] = computePrivateKeys(sigS, sigR);
-
     const { S, V } = this.core.getPublicKeys(s, v);
-
     const keyPairs = { s, v, S, V };
 
     const curvyHandle = await this.client.user.GetCurvyHandleByOwnerAddress(address);
-
-    if (!curvyHandle) {
-      throw new Error(`No Curvy handle found for owner address: ${ownerAddress}`);
-    }
+    if (!curvyHandle) throw new Error(`No Curvy handle found for owner address: ${ownerAddress}`);
 
     const ownerDetails = await this.client.user.ResolveCurvyHandle(curvyHandle);
-
     if (!ownerDetails) throw new Error(`Handle ${curvyHandle} does not exist.`);
 
     if (!ownerDetails.publicKeys.some(({ viewingKey: V, spendingKey: S }) => V === keyPairs.V && S === keyPairs.S))
@@ -317,7 +268,7 @@ export class CurvySDK {
 
     const wallet = new CurvyWallet(curvyHandle, address, keyPairs);
 
-    await this.scanner.AddWallet(wallet);
+    await this.walletManager.AddWallet(wallet);
 
     return wallet;
   }
@@ -334,42 +285,34 @@ export class CurvySDK {
     }
   }
 
-  // Subscribe to sync started events
   public onSyncStarted(listener: (event: SyncStartedEvent) => void): void {
     this.emitter.on(SYNC_STARTED_EVENT, listener);
   }
 
-  // Subscribe to sync progress events
   public onSyncProgress(listener: (event: SyncProgressEvent) => void): void {
     this.emitter.on(SYNC_PROGRESS_EVENT, listener);
   }
 
-  // Subscribe to sync complete events
   public onSyncComplete(listener: (event: SyncProgressEvent) => void): void {
     this.emitter.on(SYNC_COMPLETE_EVENT, listener);
   }
 
-  // Subscribe to sync error events
   public onSyncError(listener: (event: SyncErrorEvent) => void): void {
     this.emitter.on(SYNC_ERROR_EVENT, listener);
   }
 
-  // Subscribe to scan progress events
   public onScanProgress(listener: (event: ScanErrorEvent) => void): void {
     this.emitter.on(SCAN_PROGRESS_EVENT, listener);
   }
 
-  // Subscribe to scan complete events
   public onScanComplete(listener: (event: ScanCompleteEvent) => void): void {
     this.emitter.on(SCAN_COMPLETE_EVENT, listener);
   }
 
-  // Subscribe to scan match events
   public onScanMatch(listener: (event: ScanMatchEvent) => void): void {
     this.emitter.on(SCAN_MATCH_EVENT, listener);
   }
 
-  // Subscribe to scan error events
   public onScanError(listener: (event: ScanErrorEvent) => void): void {
     this.emitter.on(SCAN_ERROR_EVENT, listener);
   }

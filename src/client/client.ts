@@ -7,6 +7,8 @@ import type {
   GetUsernameByOwnerAddressResponse,
   Network,
   ResolveUsernameResponse,
+  DepositPayload, WithdrawPayload, AggregationRequest,
+  AggregatorRequestStatus
 } from "../types";
 import { decimalStringToBytes } from "../utils/publicKeyEncoding";
 import { toSlug } from "../utils/slug";
@@ -75,11 +77,15 @@ export class APIClient implements IAPIClient {
 
       clearTimeout(timeoutId);
 
+      let responseText: string;
       let responseBody: { data?: T; error?: string };
+
       try {
-        responseBody = await response.json();
+        responseText = await response.text();
+        responseBody = JSON.parse(responseText);
       } catch (e) {
-        throw new APIError("Invalid JSON response", response.status, await response.text());
+        // @ts-ignore
+        throw new APIError("Invalid JSON response", response.status, responseText);
       }
 
       if (responseBody.error !== undefined && responseBody.data === undefined) {
@@ -203,5 +209,39 @@ export class APIClient implements IAPIClient {
         path: "/auth/renew",
       })
     ).token;
+  }
+
+  public async SubmitDeposit(data: DepositPayload): Promise<{ requestId: string }> {
+    return await this.request({
+      method: "POST",
+      path: "/aggregator/deposit",
+      body: data,
+    });
+  }
+
+  public async SubmitWithdraw(data: WithdrawPayload): Promise<{ requestId: string }> {
+    return await this.request({
+      method: "POST",
+      path: "/aggregator/withdraw",
+      body: data,
+    });
+  }
+
+  public async SubmitAggregation(data: { aggregations: AggregationRequest[] }): Promise<{ requestId: string }> {
+    return await this.request({
+      method: "POST",
+      path: "/aggregator/aggregation",
+      body: data,
+    });
+  }
+
+  public async GetRequestStatus(requestId: string): Promise<{
+    requestId: string;
+    status: AggregatorRequestStatus;
+  }> {
+    return await this.request({
+      method: "GET",
+      path: `/aggregator/request-status/${requestId}/status`,
+    });
   }
 }

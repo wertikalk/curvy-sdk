@@ -10,6 +10,7 @@ export class AnnouncementSyncer {
   private client: IAPIClient;
   private emitter: CurvyEventEmitter;
   private isSyncing = false;
+  private started: boolean = false;
 
   constructor(storage: AnnouncementStorageInterface, client: IAPIClient, emitter: CurvyEventEmitter) {
     this.storage = storage;
@@ -18,6 +19,8 @@ export class AnnouncementSyncer {
   }
 
   public async Start(): Promise<void> {
+    if (this.started) return;
+
     // Initial sync
     await this.sync();
 
@@ -25,6 +28,8 @@ export class AnnouncementSyncer {
     setInterval(async () => {
       await this.sync();
     }, SYNC_POLL_INTERVAL);
+
+    this.started = true;
   }
 
   // SyncAnnouncements will fetch and store all announcements since a specific time

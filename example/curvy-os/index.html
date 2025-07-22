@@ -112,7 +112,7 @@
                         alt="Events Icon"
                         style="width: 12px; height: 12px; margin-right: 4px"
                     />
-                    Events
+                    <Events></Events>
                 </li>
                 <li
                     role="tab"
@@ -125,6 +125,18 @@
                         style="width: 12px; height: 12px; margin-right: 4px"
                     />
                     Announcements
+                </li>
+                <li
+                        role="tab"
+                        data-tab-id="aggregatorTab"
+                        onclick="showTabContent('aggregatorTab')"
+                >
+                    <img
+                            src="https://win98icons.alexmeub.com/icons/png/catalog-1.png"
+                            alt="Aggregator Icon"
+                            style="width: 12px; height: 12px; margin-right: 4px"
+                    />
+                    Aggregator
                 </li>
             </menu>
             <div class="window" role="tabpanel">
@@ -279,6 +291,39 @@
                             <tbody></tbody>
                         </table>
                     </div>
+                </div>
+                <div id="aggregatorTab" class="window-body" style="display: none; visibility: hidden;">
+                    <fieldset>
+                        <legend>Aggregator Request</legend>
+
+                        <div class="field-row">
+                            <label for="aggregator-mode">Mode:</label>
+                            <select id="aggregator-mode">
+                                <option value="Deposit">Deposit</option>
+                                <option value="Withdraw">Withdraw</option>
+                                <option value="Aggregation">Aggregation</option>
+                            </select>
+                        </div>
+
+                        <div class="field-row" style="flex-direction: column;">
+                            <label for="aggregator-payload">Payload (JSON):</label>
+                            <textarea id="aggregator-payload" style="width: 100%; height: 120px;"></textarea>
+                        </div>
+
+                        <div class="field-row">
+                            <button onclick="submitAggregatorRequest()">Submit</button>
+                        </div>
+
+                        <div class="field-row">
+                            <label for="aggregator-request-id">Request ID:</label>
+                            <input id="aggregator-request-id" type="text" disabled style="width: 100%;">
+                        </div>
+
+                        <div class="field-row">
+                            <label for="aggregator-status">Status:</label>
+                            <input id="aggregator-status" type="text" disabled style="width: 100%;">
+                        </div>
+                    </fieldset>
                 </div>
             </div>
             <div class="status-bar">

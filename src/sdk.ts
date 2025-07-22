@@ -30,8 +30,16 @@ import type CurvyStealthAddress from "./stealth-address";
 import { ArrayAnnouncementStorage } from "./storage/announcement-storage";
 import type { AnnouncementStorageInterface } from "./storage/interface";
 import { AnnouncementSyncer } from "./syncer";
-import type { Currency, Network, NetworkFlavour } from "./types";
 import { signJwtNonce } from "./utils";
+import type {
+  AggregationRequest,
+  AggregatorRequestStatus,
+  Currency,
+  DepositPayload,
+  Network,
+  NetworkFlavour,
+  WithdrawPayload
+} from "./types";
 import { arrayBufferToHex } from "./utils/arrayBuffer";
 import { deriveAddress } from "./utils/deriveAddress";
 import { computePrivateKeys } from "./utils/keyComputation";
@@ -76,7 +84,6 @@ export class CurvySDK {
     }
 
     await Core.init(wasmUrl);
-    this.syncer.Start().then((r) => {});
   }
 
   public GetNetworkAndCurrencyFromBalanceIdentifier(
@@ -161,6 +168,23 @@ export class CurvySDK {
     if (response?.message !== "Saved") throw new Error("Failed to register announcement");
 
     return derivedAddress;
+  }
+
+  public async CreateDeposit(payload: DepositPayload): Promise<{ requestId: string }> {
+    const response = await this.client.SubmitDeposit(payload);
+    return response;
+  }
+
+  public async CreateWithdraw(payload: WithdrawPayload): Promise<{ requestId: string }> {
+    return await this.client.SubmitWithdraw(payload);
+  }
+
+  public async CreateAggregation(payload: { aggregations: AggregationRequest[] }): Promise<{ requestId: string }> {
+    return await this.client.SubmitAggregation(payload);
+  }
+
+  public async GetRequestStatus(requestId: string): Promise<{requestId: string; status: AggregatorRequestStatus}>{
+    return await this.client.GetRequestStatus(requestId);
   }
 
   public async Send(
@@ -311,10 +335,11 @@ export class CurvySDK {
       }),
     );
 
+    this.syncer.Start().then((r) => {});
+
     const wallet = new CurvyWallet(curvyHandle, address, keyPairs);
 
     await this.scanner.AddWallet(wallet);
-
     return wallet;
   }
 

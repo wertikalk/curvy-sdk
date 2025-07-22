@@ -347,6 +347,71 @@ async function estimateFee() {
 
 window.estimateFee = estimateFee;
 
+function pollAggregatorStatus(requestId) {
+  const statusField = document.getElementById("aggregator-status");
+
+  const interval = setInterval(async () => {
+    try {
+      const res = await window.curvySDK.GetRequestStatus(requestId);
+      statusField.value = res.status;
+
+      if (["completed", "failed"].includes(res.status)) {
+        clearInterval(interval);
+      }
+    } catch (err) {
+      clearInterval(interval);
+      statusField.value = "error";
+      console.error("Failed to get status:", err);
+    }
+  }, 3000);
+}
+
+async function submitAggregatorRequest() {
+  try {
+    const mode = document.getElementById("aggregator-mode").value;
+    const payloadText = document.getElementById("aggregator-payload").value;
+    const payload = JSON.parse(payloadText);
+    let response;
+
+    if (mode === "Deposit") {
+      response = await window.curvySDK.CreateDeposit(payload);
+    } else if (mode === "Withdraw") {
+      response = await window.curvySDK.CreateWithdraw(payload);
+    } else if (mode === "Aggregation") {
+      response = await window.curvySDK.CreateAggregation(payload);
+    } else {
+      throw new Error("Invalid aggregator mode selected.");
+    }
+
+    document.getElementById("aggregator-request-id").value = response.requestId;
+    document.getElementById("aggregator-status").value = "";
+
+    pollAggregatorStatus(response.requestId);
+
+  } catch (err) {
+    alert("Aggregator request failed:\n" + err.message);
+  }
+}
+
+window.submitAggregatorRequest = submitAggregatorRequest;
+
+async function checkAggregatorStatus() {
+  const requestId = document.getElementById("aggregator-request-id").value;
+  if (!requestId) {
+    alert("No request ID found.");
+    return;
+  }
+
+  try {
+    const res = await window.curvySDK.GetRequestStatus(requestId);
+    document.getElementById("aggregator-status").value = res.status;
+  } catch (err) {
+    alert("Status check failed:\n" + err.message);
+  }
+}
+
+window.checkAggregatorStatus = checkAggregatorStatus;
+
 async function send() {
   // Disable when we start estimating
   document.getElementById("estimate-fee").disabled = true;

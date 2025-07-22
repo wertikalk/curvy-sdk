@@ -16,7 +16,14 @@
     "devDependencies": {
         "vite": "^7.0.4"
     },
+    "pnpm": {
+        "overrides": {
+            "@0xcurvy/curvy-sdk": "link:../../../../../.local/share/pnpm/global/5/node_modules/@0xcurvy/curvy-sdk",
+            "curvy-sdk": "link:../../../../../../../root/.local/share/pnpm/global/5/node_modules/@0xcurvy/curvy-sdk"
+        }
+    },
     "dependencies": {
-        "@0xcurvy/curvy-sdk": "^0.0.5"
+        "@0xcurvy/curvy-sdk": "link:../../../../../.local/share/pnpm/global/5/node_modules/@0xcurvy/curvy-sdk",
+        "curvy-sdk": "link:../../../../../../../root/.local/share/pnpm/global/5/node_modules/@0xcurvy/curvy-sdk"
     }
 }

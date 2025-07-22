@@ -1,9 +1,11 @@
 import type {
+  AggregationRequest,
   CreateAnnouncementParams,
-  CreateAnnouncementResponse,
+  CreateAnnouncementResponse, DepositPayload,
   GetAnnouncementsResponse,
   Network,
-  ResolveUsernameResponse,
+  ResolveUsernameResponse, WithdrawPayload,
+  AggregatorRequestStatus
 } from "../types";
 
 export interface IAPIClient {
@@ -15,8 +17,12 @@ export interface IAPIClient {
   CreateAnnouncement(params: CreateAnnouncementParams): Promise<CreateAnnouncementResponse>;
   GetNetworks(): Promise<Network[]>;
   ResolveUsername(username: string): Promise<ResolveUsernameResponse>;
-  GetCurvyHandleByOwnerAddress(ownerAddress: string): Promise<string | undefined>;
   UpdateBearerToken(newBearerToken: string): void;
+  GetCurvyHandleByOwnerAddress(ownerAddress: string): Promise<string | undefined>;
+  SubmitDeposit(data: DepositPayload): Promise<{ requestId: string }>;
+  SubmitWithdraw(data: WithdrawPayload): Promise<{ requestId: string }>;
+  SubmitAggregation(data: { aggregations: AggregationRequest[] }): Promise<{ requestId: string }>;
+  GetRequestStatus(requestId: string): Promise<{ requestId: string; status: AggregatorRequestStatus }>;
   GetBearerTotp(): Promise<string>;
   CreateBearerToken(body: {
     nonce: string;

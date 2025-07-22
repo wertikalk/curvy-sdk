@@ -86,3 +86,64 @@ export type GetAnnouncementsResponse = {
 export type GetUsernameByOwnerAddressResponse = {
   handle: string | undefined;
 };
+
+export type DepositPayload = {
+  outputNotes: OutputNoteData[];
+  csucAddress: string;
+  csucTransferAllowanceSignature: string;
+};
+
+export type WithdrawPayload = {
+  inputNotes: InputNoteData[];
+  signatures: Signature[];
+  destinationAddress: string;
+};
+
+export type Aggregation = {
+  inputNotes: InputNoteData[];
+  outputNotes: OutputNoteData[];
+  signatures: Signature[];
+  ephemeralKeys: bigint[];
+};
+
+export type AggregationPayload = {
+  aggregations: Aggregation[];
+};
+
+export type InputNoteData = {
+  owner: {
+    ownerBabyJub: bigint[];
+    sharedSecret: bigint;
+  };
+  token: bigint;
+  amount: bigint;
+};
+
+export type Signature = {
+  S: bigint;
+  R8: bigint[];
+};
+
+export type OutputNoteData = {
+  ownerHash: bigint;
+  amount: bigint;
+  token: bigint;
+};
+
+export type AggregationRequest = {
+  id?: string;
+  isDummy: boolean;
+  userId: string;
+  ephemeralKeys: bigint[];
+  inputNotesData: InputNoteData[];
+  outputNotesData: OutputNoteData[];
+  outputSignatures: Signature[];
+  aggregationGroupId: string;
+};
+
+export type AggregatorRequestStatus =
+  | 'pending'
+  | 'submitting'
+  | 'success'
+  | 'failed'
+  | 'cancelled';

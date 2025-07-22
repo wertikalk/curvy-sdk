@@ -1,9 +1,8 @@
 import type { RawAnnoucement } from "@/types/api";
 
 export type ScannedAnnouncement = RawAnnoucement & {
-  recipientStealthPrivateKey: string;
-  recipientStealthAddress: string;
-  recipientStealthPublicKey: string;
+  publicKey: string;
+  address: string;
 };
 
 export type AnnouncementBase = {
@@ -11,9 +10,6 @@ export type AnnouncementBase = {
   viewTag: string;
   recipientStealthPublicKey: string;
 };
-
-export type NetworkFlavour = "evm" | "starknet";
-export type NetworkGroup = "Ethereum" | "Starknet" | "Arbitrum";
 
 export type User = {
   id?: string;

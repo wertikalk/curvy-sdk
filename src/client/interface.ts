@@ -39,5 +39,11 @@ export interface IAPIClient {
 
   auth: {
     UpdateBearerToken(newBearerToken: string): void;
+    GetBearerTotp(): Promise<string>;
+    CreateBearerToken(body: {
+      nonce: string;
+      signature: string;
+    }): Promise<string>;
+    RefreshBearerToken(): Promise<string>;
   };
 }

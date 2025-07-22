@@ -72,7 +72,7 @@ export class ArrayAnnouncementStorage implements AnnouncementStorageInterface {
 
       const oldestTimestamp = filtered.length ? new Date(filtered[filtered.length - 1].createdAt) : undefined;
 
-      const newestTimestamp = filtered.length ? new Date(filtered[0].createdAt) : undefined;
+      const latestTimestamp = filtered.length ? new Date(filtered[0].createdAt) : undefined;
 
       // TODO: Think about the returned object, why oldest & newwest?
       return {
@@ -82,7 +82,7 @@ export class ArrayAnnouncementStorage implements AnnouncementStorageInterface {
         })),
         total,
         oldestTimestamp,
-        newestTimestamp,
+        latestTimestamp,
       };
     } catch (error) {
       throw new StorageError("Failed to query announcements", error as Error);

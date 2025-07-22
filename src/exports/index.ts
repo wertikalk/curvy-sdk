@@ -1,4 +1,4 @@
-export { type CurvySDK, init } from "../index";
+export type { CurvySDK } from "../index";
 export type { CurvyWallet } from "../wallet";
 
 export { filterNetworks, type NetworkFilter } from "../utils/network";

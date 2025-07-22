@@ -1,5 +1,4 @@
 import { APIError } from "@/errors";
-import type { AuthConfig } from "@/types";
 
 const DEFAULT_TIMEOUT = 5000;
 
@@ -12,37 +11,25 @@ type RequestOptions = {
 };
 
 class HttpClient {
-  private apiKey?: string;
+  private apiKey: string;
   private bearerToken?: string;
   protected readonly apiBaseUrl: string;
 
-  constructor(authConfig: AuthConfig, apiBaseUrl?: string) {
-    // Ensure at least one authentication method is provided
-    if (!authConfig.apiKey && !authConfig.bearerToken) {
-      throw new Error("Either apiKey or bearerToken must be provided");
-    }
-
-    // Ensure only one authentication method is provided
-    if (authConfig.apiKey && authConfig.bearerToken) {
-      throw new Error("Cannot provide both apiKey and bearerToken, choose one");
-    }
-
-    this.apiKey = authConfig.apiKey;
-    this.bearerToken = authConfig.bearerToken;
-
+  constructor(apiKey: string, apiBaseUrl?: string) {
+    this.apiKey = apiKey;
     this.apiBaseUrl = apiBaseUrl || "https://api.curvy.box";
   }
 
   // Method to update the bearer token (for token refresh scenarios)
   protected UpdateBearerToken(newBearerToken: string): void {
     this.bearerToken = newBearerToken;
-    this.apiKey = undefined; // Clear API key when switching to bearer token
   }
 
   private getHeaders(): Record<string, string> {
     const baseHeaders = {
       "Content-Type": "application/json",
       "User-Agent": "curvy-sdk",
+      "X-Curvy-API-Key": this.apiKey,
     };
 
     if (this.bearerToken) {
@@ -52,17 +39,10 @@ class HttpClient {
       };
     }
 
-    if (this.apiKey) {
-      return {
-        ...baseHeaders,
-        "X-Curvy-API-Key": this.apiKey,
-      };
-    }
-
-    throw new Error("No authentication method available");
+    return baseHeaders;
   }
 
-  protected async request<T>({
+  protected async request<T extends object | null>({
     method,
     path,
     body,
@@ -89,22 +69,28 @@ class HttpClient {
 
       clearTimeout(timeoutId);
 
-      let responseBody: { data?: T; error?: string };
+      let responseBody: T;
       try {
-        responseBody = await response.json();
+        responseBody = (await response.json()) as T;
       } catch (e) {
         throw new APIError("Invalid JSON response", response.status, await response.text());
       }
 
-      if (responseBody.error !== undefined && responseBody.data === undefined) {
-        throw new APIError(responseBody.error || `HTTP ${response.status}`, response.status, responseBody);
+      if (responseBody && "data" in responseBody && "error" in responseBody) {
+        if (responseBody.error !== undefined && responseBody.data === undefined) {
+          throw new APIError(
+            (responseBody.error as string) || `HTTP ${response.status}`,
+            response.status,
+            responseBody,
+          );
+        }
+
+        if (responseBody.data === undefined) {
+          throw new APIError("Missing data in response", response.status, responseBody);
+        }
       }
 
-      if (responseBody.data === undefined) {
-        throw new APIError("Missing data in response", response.status, responseBody);
-      }
-
-      return responseBody.data;
+      return responseBody;
     } catch (error) {
       if (error instanceof APIError) {
         throw error;

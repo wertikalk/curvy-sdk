@@ -1,39 +1,37 @@
-import type { NetworkFlavour } from "@/types";
+import type { NETWORKS, TOKENS } from "@/constants/networks";
+import type { NetworkFlavour, ScannedAnnouncement } from "@/types";
 import type { Network } from "@/types/api";
-import { deriveAddress } from "./utils/deriveAddress";
 import { toSlug } from "./utils/slug";
 
 export default class CurvyStealthAddress {
-  privateKey: string;
+  id: string;
+  createdAt: string;
+
   publicKey: string;
+  ephemeralPublicKey: string;
   address: string;
-  flavour?: NetworkFlavour;
+
+  flavour: NetworkFlavour;
   networkId: number;
 
-  // balances are mapped to specific currency names
-  balances: Record<string, bigint>;
+  balances: Record<NETWORKS, Record<TOKENS, { balance: bigint; tokenAddress: string | undefined }>>;
 
-  public constructor(privateKey: string, publicKey: string, networkId: number, flavour: NetworkFlavour | undefined);
-  public constructor();
-  public constructor(privateKey?: string, publicKey?: string, networkId?: number, flavour?: NetworkFlavour) {
-    this.privateKey = privateKey || "";
-    this.publicKey = publicKey || "";
-    this.balances = {};
-    this.networkId = networkId || -1;
-    this.flavour = flavour;
-    this.address = deriveAddress(this.publicKey, flavour);
+  constructor(announcement: ScannedAnnouncement) {
+    this.id = announcement.id;
+    this.createdAt = announcement.createdAt;
+
+    this.publicKey = announcement.publicKey;
+    this.ephemeralPublicKey = announcement.ephemeralPublicKey;
+    this.address = announcement.address;
+
+    this.flavour = announcement.networkFlavour;
+    this.networkId = announcement.network_id;
+
+    this.balances = Object.create(null);
   }
 
-  public static fromAddress(address: string): CurvyStealthAddress {
-    const stealthAddress = new CurvyStealthAddress();
-
-    stealthAddress.address = address;
-
-    return stealthAddress;
-  }
-
-  public SetBalance(currency: string, balance: bigint): void {
-    this.balances[currency] = balance;
+  public SetBalance(symbol: string, balance: bigint): void {
+    this.balances[symbol] = balance;
   }
 
   public SetBalances(network: Network, balances: Record<string, bigint>): void {

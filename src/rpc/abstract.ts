@@ -1,6 +1,6 @@
+import type { CurvyAddress, CurvyAddressBalances } from "@/curvy-address/interface";
 import type { Network } from "@/types/api";
 import type { Address } from "viem";
-import type CurvyStealthAddress from "../stealth-address";
 import type { StarknetFeeEstimate } from "./starknet";
 
 export default abstract class RPC {
@@ -17,10 +17,12 @@ export default abstract class RPC {
 
   abstract init(): void;
 
-  abstract GetBalances(stealthAddress: CurvyStealthAddress): Promise<Record<string, bigint>>;
+  abstract getBalances(stealthAddress: CurvyAddress): Promise<CurvyAddressBalances>;
+
+  abstract getBalance(stealthAddress: CurvyAddress, symbol: string): Promise<bigint>;
 
   abstract SendToAddress(
-    stealthAddress: CurvyStealthAddress,
+    stealthAddress: CurvyAddress,
     address: string,
     amount: string,
     currency: string,
@@ -28,7 +30,7 @@ export default abstract class RPC {
   ): Promise<string>;
 
   abstract EstimateFee(
-    stealthAddress: CurvyStealthAddress,
+    stealthAddress: CurvyAddress,
     address: Address,
     amount: string,
     currency: string,

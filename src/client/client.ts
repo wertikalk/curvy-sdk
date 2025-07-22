@@ -40,14 +40,7 @@ export class APIClient extends HttpClient implements IAPIClient {
         queryParams,
       });
 
-      // const optimizedAnnouncements = result.announcements.map((announcement) => ({
-      //   ...announcement,
-      //   ephemeralPublicKey: decimalStringToBytes(announcement.ephemeralPublicKey),
-      // }));
-
-      // return { total: result.total, announcements: optimizedAnnouncements };
-
-      return result;
+      return result.data;
     },
     UpdateAnnouncementEncryptedMessage: async (id: string, body: UpdateAnnouncementEncryptedMessageRequestBody) => {
       return await this.request<UpdateAnnouncementEncryptedMessageReturnType>({
@@ -71,7 +64,7 @@ export class APIClient extends HttpClient implements IAPIClient {
         path: "/currency/latest",
       });
 
-      return networks.map((network) => {
+      return networks.data.map((network) => {
         return { ...network, rpcUrl: `${this.apiBaseUrl}/rpc/${toSlug(network.name)}` };
       });
     },
@@ -99,13 +92,46 @@ export class APIClient extends HttpClient implements IAPIClient {
         path: `/user/check/${ownerAddress}`,
       });
 
-      return response?.handle || null;
+      return response.data?.handle || null;
     },
   };
 
   auth = {
     UpdateBearerToken: async (newBearerToken: string) => {
       return this.UpdateBearerToken(newBearerToken);
+    },
+    GetBearerTotp: async () => {
+      return (
+        await this.request<{
+          nonce: string;
+        }>({
+          method: "GET",
+          path: "/auth/nonce",
+        })
+      ).nonce;
+    },
+    CreateBearerToken: async (body: { nonce: string; signature: string }) => {
+      return (
+        await this.request<{
+          success: boolean;
+          token: string;
+        }>({
+          method: "POST",
+          body,
+          path: "/auth",
+        })
+      ).token;
+    },
+    RefreshBearerToken: async () => {
+      return (
+        await this.request<{
+          success: boolean;
+          token: string;
+        }>({
+          method: "POST",
+          path: "/auth/renew",
+        })
+      ).token;
     },
   };
 }

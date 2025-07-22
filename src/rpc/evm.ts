@@ -1,4 +1,8 @@
+import type { EVM_NETWORKS, NETWORK_FLAVOUR } from "@/constants/networks";
 import { evmMulticall3Abi } from "@/contracts/evm/abi/multicall3";
+import type { EVMCurvyAddress } from "@/curvy-address/evm";
+import type { CurvyAddressBalances } from "@/curvy-address/interface";
+import { networkGroupToSlug } from "@/utils/helpers";
 import {
   http,
   type Address,
@@ -17,7 +21,6 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { getBalance, readContract } from "viem/actions";
-import type CurvyStealthAddress from "../stealth-address";
 import RPC from "./abstract";
 
 export default class EVMRPC extends RPC {
@@ -55,7 +58,7 @@ export default class EVMRPC extends RPC {
     });
   }
 
-  async GetBalances(stealthAddress: CurvyStealthAddress) {
+  async getBalances(stealthAddress: EVMCurvyAddress) {
     const evmMulticall = getContract({
       abi: evmMulticall3Abi,
       address: this.network.multiCallContractAddress as Address,
@@ -89,10 +92,11 @@ export default class EVMRPC extends RPC {
       result: [_, tokenBalances],
     } = await evmMulticall.simulate.aggregate([calls]);
 
+    const networkSlug = networkGroupToSlug(this.network) as EVM_NETWORKS;
     const balances = tokenBalances
       .map((encodedTokenBalance, idx) => {
-        const tokenAddress = this.network.currencies[idx]?.contract_address;
-        const symbol = this.network.currencies[idx]?.symbol;
+        const { contract_address: tokenAddress, symbol } = this.network.currencies[idx];
+
         let balance = 0n;
 
         if (!tokenAddress)
@@ -108,26 +112,23 @@ export default class EVMRPC extends RPC {
             data: encodedTokenBalance,
           });
 
-        return balance ? { balance, symbol } : null;
+        return balance ? { balance, symbol, tokenAddress } : null;
       })
-      .filter((balance) => balance !== null);
+      .filter(Boolean)
+      .reduce<CurvyAddressBalances<NETWORK_FLAVOUR["EVM"]>>((res, { balance, symbol, tokenAddress }) => {
+        res[networkSlug][symbol] = { balance, tokenAddress };
+        return res;
+      }, Object.create(null));
 
-    // TODO: see if I need a separate reduce or just one.
-    const goodBalances = balances.reduce(
-      (acc, balance, _) => {
-        acc[balance.symbol] = balance.balance;
-        return acc;
-      },
-      {} as Record<string, bigint>,
-    );
-
-    stealthAddress.SetBalances(this.network, goodBalances);
+    stealthAddress.setBalances(this.network, balances);
     return stealthAddress.balances;
   }
 
-  async GetBalance(stealthAddress: CurvyStealthAddress, currency: string): Promise<bigint> {
-    const token = this.network.currencies.find((c) => c.symbol === currency);
-    if (!token) throw new Error(`Token ${currency} not found.`);
+  async getBalance(stealthAddress: EVMCurvyAddress, symbol: string): Promise<bigint> {
+    const token = this.network.currencies.find((c) => c.symbol === symbol);
+    if (!token) throw new Error(`Token ${symbol} not found.`);
+
+    const tokenAddress = token.contract_address;
 
     let balance = 0n;
 
@@ -144,11 +145,11 @@ export default class EVMRPC extends RPC {
       args: [stealthAddress.address as Address],
     });
 
-    stealthAddress.SetBalance(currency, balance);
+    stealthAddress.setBalance(this.network, { symbol, balance, tokenAddress });
     return balance;
   }
 
-  async _PrepareTx({ privateKey }: CurvyStealthAddress, address: Address, amount: string, currency: string) {
+  async _PrepareTx({ privateKey }: EVMCurvyAddress, address: Address, amount: string, currency: string) {
     const token = this.network.currencies.find((c) => c.symbol === currency);
     if (!token) throw new Error(`Token ${currency} not found.`);
 
@@ -204,7 +205,7 @@ export default class EVMRPC extends RPC {
   }
 
   async SendToAddress(
-    stealthAddress: CurvyStealthAddress,
+    stealthAddress: EVMCurvyAddress,
     address: string,
     amount: string,
     currency: string,
@@ -217,7 +218,7 @@ export default class EVMRPC extends RPC {
   }
 
   async EstimateFee(
-    stealthAddress: CurvyStealthAddress,
+    stealthAddress: EVMCurvyAddress,
     address: Address,
     amount: string,
     currency: string,

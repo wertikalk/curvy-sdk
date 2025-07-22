@@ -1,12 +1,12 @@
+import type { NETWORK_FLAVOUR_VALUES } from "@/constants/networks";
+import { CURVY_ACCOUNT_CLASS_HASHES } from "@/constants/starknet";
+import { starknetAccountAbi } from "@/contracts/starknet/abi/account";
 import { computeAddress } from "ethers";
 import { CallData, hash, validateAndParseAddress } from "starknet";
 import type { Address } from "viem";
-import { CURVY_ACCOUNT_CLASS_HASHES } from "../constants/starknet";
-import { starknetAccountAbi } from "../contracts/starknet/abi/account";
-import type { NetworkFlavour } from "../types";
 import { decimalStringToHex } from "./publicKeyEncoding";
 
-export const deriveAddress = (rawPubKey?: string, flavour?: NetworkFlavour) => {
+export const deriveAddress = (rawPubKey?: string, flavour?: NETWORK_FLAVOUR_VALUES) => {
   if (!rawPubKey || !flavour) {
     return "";
   }

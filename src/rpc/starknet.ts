@@ -1,3 +1,12 @@
+import type { NETWORK_FLAVOUR, STARKNET_NETWORKS } from "@/constants/networks";
+import { CURVY_ACCOUNT_CLASS_HASHES, CURVY_DUMMY_STARKNET_ACCOUNT } from "@/constants/starknet";
+import { starknetAccountAbi } from "@/contracts/starknet/abi/account";
+import { starknetErc20Abi } from "@/contracts/starknet/abi/erc20";
+import { starknetMulticallAbi } from "@/contracts/starknet/abi/multicall";
+import type { CurvyAddressBalances } from "@/curvy-address/interface";
+import type { StarknetCurvyAddress } from "@/curvy-address/starknet";
+import { networkGroupToSlug } from "@/utils/helpers";
+import { decimalStringToHex } from "@/utils/publicKeyEncoding";
 // TODO: Rename private methods
 import {
   constants,
@@ -18,12 +27,6 @@ import {
   validateAndParseAddress,
 } from "starknet";
 import { type Address, parseUnits } from "viem";
-import { CURVY_ACCOUNT_CLASS_HASHES, CURVY_DUMMY_STARKNET_ACCOUNT } from "../constants/starknet";
-import { starknetAccountAbi } from "../contracts/starknet/abi/account";
-import { starknetErc20Abi } from "../contracts/starknet/abi/erc20";
-import { starknetMulticallAbi } from "../contracts/starknet/abi/multicall";
-import type CurvyStealthAddress from "../stealth-address";
-import { decimalStringToHex } from "../utils/publicKeyEncoding";
 import RPC from "./abstract";
 
 function fromUint256(l: BigNumberish, h: BigNumberish): bigint {
@@ -49,7 +52,7 @@ export default class StarknetRPC extends RPC {
     });
   }
 
-  async GetBalances(stealthAddress: CurvyStealthAddress) {
+  async getBalances(stealthAddress: StarknetCurvyAddress) {
     const starkMulticall = new Contract(
       starknetMulticallAbi,
       this.network.multiCallContractAddress as Address,
@@ -70,32 +73,34 @@ export default class StarknetRPC extends RPC {
     }));
 
     const tokenBalances = await starkMulticall.aggregate(calls);
-    // TODO: Don't do good and bad balances
+
+    const networkSlug = networkGroupToSlug(this.network) as STARKNET_NETWORKS;
     const balances = tokenBalances
       .map(([low, high], idx) => {
+        const { contract_address: tokenAddress, symbol } = this.network.currencies[idx];
+
         return {
           balance: fromUint256(low, high),
-          symbol: this.network.currencies[idx].symbol,
+          symbol,
+          tokenAddress,
         };
       })
-      .filter((token) => Boolean(token.balance));
+      .filter((token) => Boolean(token.balance))
+      .reduce<CurvyAddressBalances<NETWORK_FLAVOUR["STARKNET"]>>((res, { balance, symbol, tokenAddress }) => {
+        res[networkSlug][symbol] = { balance, tokenAddress };
+        return res;
+      }, Object.create(null));
 
-    const goodBalances = balances.reduce(
-      (acc, balance, _) => {
-        acc[balance.symbol] = balance.balance;
-        return acc;
-      },
-      {} as Record<string, bigint>,
-    );
-
-    stealthAddress.SetBalances(this.network, goodBalances);
+    stealthAddress.setBalances(this.network, balances);
 
     return stealthAddress.balances;
   }
 
-  async GetBalance(stealthAddress: CurvyStealthAddress, currency: string): Promise<bigint> {
-    const token = this.network.currencies.find((c) => c.symbol === currency);
-    if (!token) throw new Error(`Token ${currency} not found.`);
+  async getBalance(stealthAddress: StarknetCurvyAddress, symbol: string): Promise<bigint> {
+    const token = this.network.currencies.find((c) => c.symbol === symbol);
+    if (!token) throw new Error(`Token ${symbol} not found.`);
+
+    const tokenAddress = token.contract_address;
 
     const starkErc20 = new Contract(starknetErc20Abi, token.contract_address as Address, this.provider).typedv2(
       starknetErc20Abi,
@@ -107,12 +112,12 @@ export default class StarknetRPC extends RPC {
     if (typeof balance !== "bigint" && "low" in balance && "high" in balance)
       balance = fromUint256(balance.low, balance.high);
 
-    stealthAddress.SetBalance(currency, balance);
+    stealthAddress.setBalance(this.network, { balance, symbol, tokenAddress });
 
     return balance;
   }
 
-  private _PrepareTx(stealthAddress: CurvyStealthAddress, address: Address, amount: string, currency: string) {
+  private _PrepareTx(stealthAddress: StarknetCurvyAddress, address: Address, amount: string, currency: string) {
     const token = this.network.currencies.find((c) => c.symbol === currency);
     if (!token) throw new Error(`Token ${currency} not found.`);
 
@@ -155,7 +160,7 @@ export default class StarknetRPC extends RPC {
     });
   }
 
-  private async _CheckIsStarknetAccountDeployed(stealthAddress: CurvyStealthAddress): Promise<boolean> {
+  private async _CheckIsStarknetAccountDeployed(stealthAddress: StarknetCurvyAddress): Promise<boolean> {
     return this.provider
       .getClassHashAt(stealthAddress.address)
       .then(() => true)
@@ -171,7 +176,7 @@ export default class StarknetRPC extends RPC {
     });
   }
 
-  private async _PrepareDeploy(stealthAddress: CurvyStealthAddress) {
+  private async _PrepareDeploy(stealthAddress: StarknetCurvyAddress) {
     const starknetAccount = new Account(
       this.provider,
       stealthAddress.address,
@@ -198,7 +203,7 @@ export default class StarknetRPC extends RPC {
     return { starknetAccount, deployPayload };
   }
 
-  private async _EstimateDeployFee(stealthAddress: CurvyStealthAddress) {
+  private async _EstimateDeployFee(stealthAddress: StarknetCurvyAddress) {
     const { starknetAccount, deployPayload } = await this._PrepareDeploy(stealthAddress);
 
     return starknetAccount.estimateAccountDeployFee(deployPayload, {
@@ -222,7 +227,7 @@ export default class StarknetRPC extends RPC {
   }
 
   // TODO: Unused method
-  async EstimateDeployFee(stealthAddress: CurvyStealthAddress, skipCheck = false): Promise<bigint> {
+  async EstimateDeployFee(stealthAddress: StarknetCurvyAddress, skipCheck = false): Promise<bigint> {
     if (!skipCheck && (await this._CheckIsStarknetAccountDeployed(stealthAddress)))
       throw new Error(`Starknet account with address: ${stealthAddress.address} already deployed.`);
 
@@ -231,7 +236,7 @@ export default class StarknetRPC extends RPC {
   }
 
   async DeployStarknetAccount(
-    stealthAddress: CurvyStealthAddress,
+    stealthAddress: StarknetCurvyAddress,
     skipCheck = false,
     fee?: EstimateFee,
   ): Promise<DeployContractResponse> {
@@ -255,7 +260,7 @@ export default class StarknetRPC extends RPC {
   }
 
   async SendToAddress(
-    stealthAddress: CurvyStealthAddress,
+    stealthAddress: StarknetCurvyAddress,
     address: string,
     amount: string,
     currency: string,
@@ -285,7 +290,7 @@ export default class StarknetRPC extends RPC {
   }
 
   async EstimateFee(
-    stealthAddress: CurvyStealthAddress,
+    stealthAddress: StarknetCurvyAddress,
     address: Address,
     amount: string,
     currency: string,

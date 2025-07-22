@@ -1,5 +1,3 @@
-import type { NetworkFlavour, NetworkGroup, PublicKey } from "@/types/index";
-
 //#region API Types
 
 //////////////////////////////////////////////////////////////////////////////
@@ -8,10 +6,12 @@ import type { NetworkFlavour, NetworkGroup, PublicKey } from "@/types/index";
 //
 //////////////////////////////////////////////////////////////////////////////
 
+import type { NETWORK_FLAVOUR_VALUES, NETWORK_GROUP_VALUES } from "@/constants/networks";
+
 type _Announcement = {
   createdAt: string;
   id: string;
-  networkFlavour: NetworkFlavour;
+  networkFlavour: NETWORK_FLAVOUR_VALUES;
   network_id: number;
   viewTag: string;
 };
@@ -35,10 +35,10 @@ type Currency = {
 type RawNetwork = {
   id: number;
   name: string;
-  group: NetworkGroup;
+  group: NETWORK_GROUP_VALUES;
   testnet: boolean;
   slip0044: number;
-  flavour: NetworkFlavour;
+  flavour: NETWORK_FLAVOUR_VALUES;
   multiCallContractAddress: string;
   chainId: string;
   blockExplorerUrl: string;
@@ -66,11 +66,17 @@ type CreateAnnouncementRequestBody = {
   recipientStealthPublicKey: string;
   viewTag: string;
 };
-type CreateAnnouncementReturnType = { id: string; message: string };
+type CreateAnnouncementReturnType = {
+  data?: {
+    id: string;
+    message: string;
+  };
+  error?: string | null;
+};
 
 type GetAnnouncementsResponse = {
-  announcements: Array<RawAnnoucement>;
-  total: number;
+  data: { announcements: Array<RawAnnoucement>; total: number };
+  error: string | null;
 };
 type OptimizedAnnouncement = _Announcement & {
   ephemeralPublicKey: Uint8Array;
@@ -85,26 +91,35 @@ type UpdateAnnouncementEncryptedMessageRequestBody = {
   encryptedMessageSenderPublicKey: string;
 };
 type UpdateAnnouncementEncryptedMessageReturnType = {
-  message?: string;
+  data?: {
+    encryptedMessage: string;
+    encryptedMessageSenderPublicKey: string;
+  };
+  error?: string | null;
 };
 
 type GetAnnouncementEncryptedMessageReturnType = {
-  encryptedMessage: string;
-  encryptedMessageSenderPublicKey: string;
+  data?: {
+    message?: string;
+  };
+  error?: string | null;
 };
 
 //#endregion
 
 //#region Network
+
 type Network = RawNetworkWithCurrencies & {
   rpcUrl: string;
 };
 
-type NetworksWithCurrenciesResponse = Array<RawNetworkWithCurrencies>;
+type NetworksWithCurrenciesResponse = { data: Array<RawNetworkWithCurrencies>; error: string | null };
 type GetNetworksReturnType = Array<Network>;
+
 //#endregion
 
 //#region User
+
 type RegisterCurvyHandleRequestBody = {
   handle: string;
   ownerAddress: string;
@@ -113,17 +128,31 @@ type RegisterCurvyHandleRequestBody = {
     viewingKey: string;
   }>;
 };
-type RegisterCurvyHandleReturnType = {
-  message?: string;
-};
+type RegisterCurvyHandleReturnType =
+  | {
+      message?: string;
+    }
+  | {
+      error?: string;
+    };
 type ResolveCurvyHandleReturnType = {
-  createdAt: string;
-  publicKeys: Array<PublicKey>;
-} | null;
+  data: {
+    createdAt: string;
+    publicKeys: Array<{
+      spendingKey: string;
+      viewingKey: string;
+    }>;
+  } | null;
+  error?: string | null;
+};
 type GetCurvyHandleByOwnerAddressResponse = {
-  handle: string;
-} | null;
+  data: {
+    handle: string;
+  } | null;
+  error?: string | null;
+};
 type GetCurvyHandleByOwnerAddressReturnType = string | null;
+
 //#endregion
 
 export type {

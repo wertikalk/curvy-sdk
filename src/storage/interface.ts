@@ -12,7 +12,7 @@ export type AnnouncementQueryResult = {
   announcements: RawAnnoucement[];
   total: number;
   oldestTimestamp?: Date;
-  newestTimestamp?: Date;
+  latestTimestamp?: Date;
 };
 
 export interface AnnouncementStorageInterface {

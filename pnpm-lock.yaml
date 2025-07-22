@@ -33,6 +33,9 @@ importers:
       '@commitlint/types':
         specifier: ^19.8.1
         version: 19.8.1
+      '@total-typescript/ts-reset':
+        specifier: ^0.6.1
+        version: 0.6.1
       commitizen:
         specifier: ^4.3.1
         version: 4.3.1(@types/node@22.15.24)(typescript@5.8.3)
@@ -519,6 +522,9 @@ packages:
 
   '@starknet-io/types-js@0.8.4':
     resolution: {integrity: sha512-0RZ3TZHcLsUTQaq1JhDSCM8chnzO4/XNsSCozwDET64JK5bjFDIf2ZUkta+tl5Nlbf4usoU7uZiDI/Q57kt2SQ==}
+
+  '@total-typescript/ts-reset@0.6.1':
+    resolution: {integrity: sha512-cka47fVSo6lfQDIATYqb/vO1nvFfbPw7uWLayIXIhGETj0wcOOlrlkobOMDNQOFr9QOafegUPq13V2+6vtD7yg==}
 
   '@types/conventional-commits-parser@5.0.1':
     resolution: {integrity: sha512-7uz5EHdzz2TqoMfV7ee61Egf5y6NkcO4FB/1iCCQnbeiI1F3xzv3vK5dBCXUCLQgGYS+mUeigK1iKQzvED+QnQ==}
@@ -2284,6 +2290,8 @@ snapshots:
   '@starknet-io/types-js@0.7.10': {}
 
   '@starknet-io/types-js@0.8.4': {}
+
+  '@total-typescript/ts-reset@0.6.1': {}
 
   '@types/conventional-commits-parser@5.0.1':
     dependencies:

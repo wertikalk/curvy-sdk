@@ -137,6 +137,15 @@ export class MockAPIClient implements IAPIClient {
     UpdateBearerToken: (newBearerToken: string): void => {
       // Mock implementation: does nothing
     },
+    GetBearerTotp: async (): Promise<string> => {
+      throw new Error("Method not implemented!");
+    },
+    CreateBearerToken: async (body: { nonce: string; signature: string }): Promise<string> => {
+      throw new Error("Method not implemented!");
+    },
+    RefreshBearerToken: async (): Promise<string> => {
+      throw new Error("Method not implemented!");
+    },
   };
   user = {
     GetCurvyHandleByOwnerAddress: async (_: string): Promise<GetCurvyHandleByOwnerAddressReturnType> => {

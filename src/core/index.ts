@@ -6,6 +6,7 @@ import type {
   CoreScanArgs,
   CoreScanReturnType,
   CoreSendReturnType,
+  CoreViewerScanArgs,
   CurvyKeyPairs,
 } from "@/types/core";
 import { isNode } from "@/utils/helpers";
@@ -69,13 +70,13 @@ async function loadWasm(wasmUrl?: string): Promise<void> {
 }
 
 class Core {
-  public static async init(wasmUrl?: string): Promise<Core> {
+  static async init(wasmUrl?: string): Promise<Core> {
     await loadWasm(wasmUrl);
 
     return new Core();
   }
 
-  private prepareScanArgs(s: string, v: string, announcements: RawAnnoucement[]): CoreScanArgs {
+  #extractScanArgsFromAnnouncements(announcements: RawAnnoucement[]) {
     const Rs: Array<string> = [];
     const viewTags: Array<string> = [];
 
@@ -83,6 +84,12 @@ class Core {
       Rs.push(announcement.ephemeralPublicKey);
       viewTags.push(announcement.viewTag);
     }
+
+    return { Rs, viewTags };
+  }
+
+  #prepareScanArgs(s: string, v: string, announcements: RawAnnoucement[]): CoreScanArgs {
+    const { viewTags, Rs } = this.#extractScanArgsFromAnnouncements(announcements);
 
     return {
       k: s,
@@ -92,8 +99,19 @@ class Core {
     } satisfies CoreScanArgs;
   }
 
+  #prepareViewerScanArgs(v: string, S: string, announcements: RawAnnoucement[]): CoreViewerScanArgs {
+    const { viewTags, Rs } = this.#extractScanArgsFromAnnouncements(announcements);
+
+    return {
+      v,
+      K: S,
+      Rs,
+      viewTags,
+    } satisfies CoreViewerScanArgs;
+  }
+
   generateKeyPairs(): CurvyKeyPairs {
-    const keyPairs: CoreLegacyKeyPairs = JSON.parse(curvy.new_meta());
+    const keyPairs = JSON.parse(curvy.new_meta()) as CoreLegacyKeyPairs;
 
     return {
       s: keyPairs.k,
@@ -103,9 +121,9 @@ class Core {
     } satisfies CurvyKeyPairs;
   }
 
-  getPublicKeys(s: string, v: string): CurvyKeyPairs {
+  getCurvyKeys(s: string, v: string): CurvyKeyPairs {
     const inputs = JSON.stringify({ k: s, v });
-    const result: CoreLegacyKeyPairs = JSON.parse(curvy.get_meta(inputs));
+    const result = JSON.parse(curvy.get_meta(inputs)) as CoreLegacyKeyPairs;
     return {
       s: result.k,
       v: result.v,
@@ -116,7 +134,7 @@ class Core {
 
   send(S: string, V: string) {
     const input = JSON.stringify({ K: S, V });
-    const result: CoreSendReturnType = JSON.parse(curvy.send(input));
+    const result = JSON.parse(curvy.send(input)) as CoreSendReturnType;
 
     return {
       announcement: {
@@ -129,13 +147,23 @@ class Core {
   }
 
   scan(s: string, v: string, announcements: RawAnnoucement[]) {
-    const input = JSON.stringify(this.prepareScanArgs(s, v, announcements));
+    const input = JSON.stringify(this.#prepareScanArgs(s, v, announcements));
 
-    const { spendingPubKeys, spendingPrivKeys }: CoreScanReturnType = JSON.parse(curvy.scan(input));
+    const { spendingPubKeys, spendingPrivKeys } = JSON.parse(curvy.scan(input)) as CoreScanReturnType;
 
     return {
       spendingPubKeys: spendingPubKeys ?? [],
       spendingPrivKeys: (spendingPrivKeys ?? []).map((pk) => `0x${pk.slice(2).padStart(64, "0")}` as const),
+    };
+  }
+
+  viewerScan(v: string, S: string, announcements: RawAnnoucement[]) {
+    const input = JSON.stringify(this.#prepareViewerScanArgs(v, S, announcements));
+
+    const { spendingPubKeys } = JSON.parse(curvy.scan(input)) as CoreScanReturnType;
+
+    return {
+      spendingPubKeys: spendingPubKeys ?? [],
     };
   }
 

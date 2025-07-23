@@ -1,35 +1,24 @@
+import type { CurvyAddress } from "@/curvy-address/interface";
 import type { CurvyKeyPairs } from "@/types/core";
-import type CurvyStealthAddress from "./stealth-address";
 
 export class CurvyWallet {
-  private readonly keyPairs: CurvyKeyPairs;
-  // @ts-ignore
-  private ownerAddress: string | undefined;
-  // @ts-ignore
-  private curvyHandle: string | undefined;
+  readonly #keyPairs: CurvyKeyPairs;
+  readonly ownerAddress: string;
+  readonly curvyHandle: string;
 
-  public stealthAddresses: CurvyStealthAddress[] = [];
+  stealthAddresses: CurvyAddress[] = [];
 
-  constructor(curvyHandle: string | undefined, ownerAddress: string | undefined, keyPairs: CurvyKeyPairs) {
+  constructor(curvyHandle: string, ownerAddress: string, keyPairs: CurvyKeyPairs) {
     this.curvyHandle = curvyHandle;
     this.ownerAddress = ownerAddress;
-    this.keyPairs = keyPairs;
+    this.#keyPairs = keyPairs;
   }
 
-  // TODO: Think if should be public or we need a Scan method
-  public GetKeyPairs(): CurvyKeyPairs {
-    return this.keyPairs;
+  get keyPairs() {
+    return this.#keyPairs;
   }
 
-  public GetOwnerAddress(): string | undefined {
-    return this.ownerAddress;
-  }
-
-  public GetCurvyHandle(): string | undefined {
-    return this.curvyHandle;
-  }
-
-  public AddStealthAddress(stealthAddress: CurvyStealthAddress) {
+  addStealthAddress(stealthAddress: CurvyAddress) {
     this.stealthAddresses.push(stealthAddress);
   }
 }

@@ -8,11 +8,13 @@ abstract class _CurvyAddress<T extends NETWORK_FLAVOUR_VALUES> implements CurvyA
   createdAt: string;
 
   publicKey: string;
+  privateKey: string;
   ephemeralPublicKey: string;
   address: string;
 
-  flavour: T;
-  networkId: number;
+  networkFlavour: T;
+  network_id: number;
+  viewTag: string;
 
   balances: CurvyAddressBalances;
 
@@ -21,11 +23,13 @@ abstract class _CurvyAddress<T extends NETWORK_FLAVOUR_VALUES> implements CurvyA
     this.createdAt = announcement.createdAt;
 
     this.publicKey = announcement.publicKey;
+    this.privateKey = announcement.privateKey;
     this.ephemeralPublicKey = announcement.ephemeralPublicKey;
     this.address = announcement.address;
 
-    this.flavour = announcement.networkFlavour as T;
-    this.networkId = announcement.network_id;
+    this.networkFlavour = announcement.networkFlavour as T;
+    this.network_id = announcement.network_id;
+    this.viewTag = announcement.viewTag;
 
     this.balances = Object.create(null);
   }

@@ -6,7 +6,7 @@ import type { Network } from "@/types/api";
 import { networkGroupToSlug } from "@/utils/helpers";
 
 class StarknetCurvyAddress extends _CurvyAddress<NETWORK_FLAVOUR["STARKNET"]> {
-  // biome-ignore lint/complexity/noUselessConstructor: <explanation>
+  // biome-ignore lint/complexity/noUselessConstructor: Constructor is needed to initialize the base class with the scanned announcement
   constructor(announcement: ScannedAnnouncement) {
     super(announcement);
   }

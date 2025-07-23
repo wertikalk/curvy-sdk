@@ -46,6 +46,10 @@ export class MockAPIClient implements IAPIClient {
     this.mockAnnouncements = announcements;
   }
 
+  updateBearerToken = (newBearerToken: string): void => {
+    // Mock implementation: does nothing
+  };
+
   announcement = {
     CreateAnnouncement: async (params: CreateAnnouncementRequestBody): Promise<CreateAnnouncementReturnType> => {
       throw new Error("Method not implemented.");
@@ -134,9 +138,6 @@ export class MockAPIClient implements IAPIClient {
     },
   };
   auth = {
-    UpdateBearerToken: (newBearerToken: string): void => {
-      // Mock implementation: does nothing
-    },
     GetBearerTotp: async (): Promise<string> => {
       throw new Error("Method not implemented!");
     },

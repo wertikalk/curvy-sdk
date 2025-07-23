@@ -13,6 +13,8 @@ import type {
 } from "@/types/api";
 
 export interface IAPIClient {
+  updateBearerToken(newBearerToken: string): void;
+
   announcement: {
     CreateAnnouncement(body: CreateAnnouncementRequestBody): Promise<CreateAnnouncementReturnType>;
     UpdateAnnouncementEncryptedMessage(
@@ -38,7 +40,6 @@ export interface IAPIClient {
   };
 
   auth: {
-    UpdateBearerToken(newBearerToken: string): void;
     GetBearerTotp(): Promise<string>;
     CreateBearerToken(body: {
       nonce: string;

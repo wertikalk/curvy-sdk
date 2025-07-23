@@ -2,6 +2,7 @@ import type { EVM_NETWORKS, NETWORK_FLAVOUR } from "@/constants/networks";
 import { evmMulticall3Abi } from "@/contracts/evm/abi/multicall3";
 import type { EVMCurvyAddress } from "@/curvy-address/evm";
 import type { CurvyAddressBalances } from "@/curvy-address/interface";
+import type { HexString } from "@/types/helper";
 import { networkGroupToSlug } from "@/utils/helpers";
 import {
   http,
@@ -116,6 +117,7 @@ export default class EVMRPC extends RPC {
       })
       .filter(Boolean)
       .reduce<CurvyAddressBalances<NETWORK_FLAVOUR["EVM"]>>((res, { balance, symbol, tokenAddress }) => {
+        if (!res[networkSlug]) res[networkSlug] = Object.create(null);
         res[networkSlug][symbol] = { balance, tokenAddress };
         return res;
       }, Object.create(null));
@@ -149,11 +151,11 @@ export default class EVMRPC extends RPC {
     return balance;
   }
 
-  async _PrepareTx({ privateKey }: EVMCurvyAddress, address: Address, amount: string, currency: string) {
+  async _PrepareTx(privateKey: HexString, address: Address, amount: string, currency: string) {
     const token = this.network.currencies.find((c) => c.symbol === currency);
     if (!token) throw new Error(`Token ${currency} not found.`);
 
-    const account = privateKeyToAccount(privateKey as Address);
+    const account = privateKeyToAccount(privateKey);
 
     const txRequestBase = {
       account,
@@ -205,25 +207,27 @@ export default class EVMRPC extends RPC {
   }
 
   async SendToAddress(
-    stealthAddress: EVMCurvyAddress,
+    _curvyAddress: EVMCurvyAddress,
+    privateKey: HexString,
     address: string,
     amount: string,
     currency: string,
     fee?: bigint,
   ): Promise<SendRawTransactionReturnType> {
-    const txRequest = await this._PrepareTx(stealthAddress, address as `0x${string}`, amount, currency);
+    const txRequest = await this._PrepareTx(privateKey, address as `0x${string}`, amount, currency);
     const serializedTransaction = await this.walletClient.signTransaction(txRequest);
 
     return this.walletClient.sendRawTransaction({ serializedTransaction });
   }
 
   async EstimateFee(
-    stealthAddress: EVMCurvyAddress,
+    _curvyAddress: EVMCurvyAddress,
+    privateKey: HexString,
     address: Address,
     amount: string,
     currency: string,
   ): Promise<bigint> {
-    const txRequest = await this._PrepareTx(stealthAddress, address, amount, currency);
+    const txRequest = await this._PrepareTx(privateKey, address, amount, currency);
 
     return txRequest ? txRequest.maxFeePerGas * txRequest.gas : 0n;
   }

@@ -1,6 +1,6 @@
+import type { CurvyAddress } from "@/curvy-address/interface";
 import type { RawAnnoucement } from "@/types/api";
 import EventEmitter from "eventemitter3";
-import type CurvyStealthAddress from "./stealth-address";
 import type { CurvyWallet } from "./wallet";
 
 // Syncing events
@@ -44,7 +44,7 @@ export type ScanCompleteEvent = {
 
 export type ScanMatchEvent = {
   wallet: CurvyWallet;
-  stealthAddress: CurvyStealthAddress;
+  stealthAddress: CurvyAddress;
 };
 
 export type ScanErrorEvent = {

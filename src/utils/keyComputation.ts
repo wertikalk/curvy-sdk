@@ -1,11 +1,11 @@
 import { concat, keccak256 } from "ethers";
 
-export const computePrivateKeys = (s: bigint, r: bigint) => {
-  const [k, v] = [hash([s, r]), hash([r, s])];
+export const computePrivateKeys = (_s: bigint, _r: bigint) => {
+  const [s, v] = [hash([_s, _r]), hash([_r, _s])];
 
-  if (k === v) throw new Error("Error generating keys: k === v !");
+  if (s === v) throw new Error("Error generating keys: k === v !");
 
-  return [k, v];
+  return { s, v };
 };
 
 export const hash = (_values: bigint[]) => {

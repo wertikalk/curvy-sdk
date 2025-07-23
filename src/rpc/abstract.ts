@@ -1,6 +1,6 @@
 import type { CurvyAddress, CurvyAddressBalances } from "@/curvy-address/interface";
 import type { Network } from "@/types/api";
-import type { Address } from "viem";
+import type { HexString } from "@/types/helper";
 import type { StarknetFeeEstimate } from "./starknet";
 
 export default abstract class RPC {
@@ -22,7 +22,8 @@ export default abstract class RPC {
   abstract getBalance(stealthAddress: CurvyAddress, symbol: string): Promise<bigint>;
 
   abstract SendToAddress(
-    stealthAddress: CurvyAddress,
+    _curvyAddress: CurvyAddress,
+    privateKey: HexString,
     address: string,
     amount: string,
     currency: string,
@@ -30,8 +31,9 @@ export default abstract class RPC {
   ): Promise<string>;
 
   abstract EstimateFee(
-    stealthAddress: CurvyAddress,
-    address: Address,
+    _curvyAddress: CurvyAddress,
+    privateKey: HexString,
+    address: string,
     amount: string,
     currency: string,
   ): Promise<bigint | StarknetFeeEstimate>;

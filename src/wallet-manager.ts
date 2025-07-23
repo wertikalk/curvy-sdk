@@ -1,59 +1,91 @@
+import { AddressScanner } from "@/addressScanner";
 import type { APIClient } from "@/client/client";
 import type { Core } from "@/core";
-import type { CurvyEventEmitter, SyncProgressEvent } from "@/events";
-import { SYNC_PROGRESS_EVENT } from "@/events";
-import AnnouncementScanner from "@/scanner";
+import type { CurvyEventEmitter } from "@/events";
 import type { AnnouncementStorageInterface } from "@/storage/interface";
-import { AnnouncementSyncer } from "@/syncer";
-import type { RawAnnoucement } from "@/types/api";
+import { signJwtNonce } from "@/utils/helpers";
 import type { CurvyWallet } from "@/wallet";
 
+const JWT_REFRESH_INTERVAL = 14 * (60 * 10 ** 3);
+
 export class WalletManager {
-  private wallets: Array<CurvyWallet>;
-  private readonly scanner: AnnouncementScanner;
-  private readonly syncer: AnnouncementSyncer;
+  readonly #wallets: Map<string, CurvyWallet>;
+  readonly #apiClient: APIClient;
+  readonly #addressScanner: AddressScanner;
+  #scanInterval: NodeJS.Timeout | null;
 
-  constructor(
-    private client: APIClient,
-    private emitter: CurvyEventEmitter,
-    private storage: AnnouncementStorageInterface,
-    private core: Core,
-  ) {
-    this.wallets = [];
-    this.scanner = new AnnouncementScanner(this.storage, this.core, this.emitter);
-    this.syncer = new AnnouncementSyncer(this.storage, this.client, this.emitter);
+  activeWallet: CurvyWallet | null;
 
-    this.emitter.on(SYNC_PROGRESS_EVENT, async (event: SyncProgressEvent) => {
-      await this.scanner.Scan(this.wallets, event.announcements);
+  constructor(client: APIClient, emitter: CurvyEventEmitter, storage: AnnouncementStorageInterface, core: Core) {
+    this.#apiClient = client;
+    this.#wallets = new Map<string, CurvyWallet>();
+    this.#addressScanner = new AddressScanner(storage, core, client, emitter);
+
+    this.#scanInterval = null;
+    this.activeWallet = null;
+  }
+
+  get wallets() {
+    return Array.from(this.#wallets.values());
+  }
+
+  public getWalletByHandle(curvyHandle: string): CurvyWallet | undefined {
+    return this.#wallets.get(curvyHandle);
+  }
+
+  async setActiveWallet(wallet: CurvyWallet) {
+    if (!this.#wallets.has(wallet.curvyHandle)) {
+      throw new Error(`Wallet with curvyHandle ${wallet.curvyHandle} does not exist.`);
+    }
+
+    this.activeWallet = wallet;
+
+    this.#apiClient.updateBearerToken(
+      await this.#apiClient.auth.GetBearerTotp().then((nonce) => {
+        return this.#apiClient.auth.CreateBearerToken({ nonce, signature: signJwtNonce(nonce, wallet.keyPairs.s) });
+      }),
+    );
+
+    setInterval(
+      () =>
+        this.#apiClient.auth.RefreshBearerToken().then((token) => {
+          this.#apiClient.updateBearerToken(token);
+        }),
+      JWT_REFRESH_INTERVAL,
+    );
+  }
+
+  async addWallet(wallet: CurvyWallet): Promise<void> {
+    this.#wallets.set(wallet.curvyHandle, wallet);
+
+    if (!this.activeWallet) await this.setActiveWallet(wallet);
+
+    if (!this.#scanInterval) {
+      this.startIntervalScan();
+    }
+  }
+
+  async scanWallet(wallet: CurvyWallet): Promise<void> {
+    await this.#addressScanner.scan([wallet]);
+  }
+
+  async scanOnce(): Promise<void> {
+    await this.#addressScanner.scan(Array.from(this.#wallets.values()));
+  }
+
+  startIntervalScan(): void {
+    const walletArray = Array.from(this.#wallets.values());
+
+    this.#addressScanner.scan(walletArray).then(() => {
+      this.#scanInterval = setInterval(() => this.#addressScanner.scan(walletArray), 60000);
     });
   }
 
-  public GetWallets(): CurvyWallet[] {
-    return this.wallets;
-  }
+  stopIntervalScan(): void {
+    if (!this.#scanInterval) {
+      return;
+    }
 
-  public async AddWallet(wallet: CurvyWallet): Promise<void> {
-    await this.scanner.AddWallet(wallet);
-    this.wallets.push(wallet);
-  }
-
-  public async ScanWallet(wallet: CurvyWallet, announcements: RawAnnoucement[]): Promise<void> {
-    await this.scanner.Scan([wallet], announcements);
-  }
-
-  public StartSync(): void {
-    this.syncer.Start();
-  }
-
-  public async SyncOnce(): Promise<void> {
-    await this.syncer.sync();
-  }
-
-  public GetScanner(): AnnouncementScanner {
-    return this.scanner;
-  }
-
-  public GetSyncer(): AnnouncementSyncer {
-    return this.syncer;
+    clearInterval(this.#scanInterval);
   }
 }

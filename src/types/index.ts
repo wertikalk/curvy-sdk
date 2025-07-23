@@ -2,6 +2,7 @@ import type { RawAnnoucement } from "@/types/api";
 
 export type ScannedAnnouncement = RawAnnoucement & {
   publicKey: string;
+  privateKey: string;
   address: string;
 };
 

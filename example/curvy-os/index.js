@@ -222,7 +222,7 @@ function populateWalletsTree() {
     details.open = true;
 
     const summary = document.createElement("summary");
-    summary.textContent = wallet.GetCurvyHandle() || `(unregistered ${shortenAddress(wallet.GetOwnerAddress())})`;
+    summary.textContent = wallet.curvyHandle || `(unregistered ${shortenAddress(wallet.ownerAddress)})`;
     details.appendChild(summary);
 
     const ul = document.createElement("ul");
@@ -402,7 +402,7 @@ window.getNewStealthAddress = getNewStealthAddress;
 //
 //////////////////////////////////////////////////////////////////////////////
 
-import { init } from "@0xcurvy/curvy-sdk";
+import { CurvySDK } from "@0xcurvy/curvy-sdk";
 
 window.addEventListener("DOMContentLoaded", () => {
   showTabContent("walletsTab");
@@ -423,13 +423,7 @@ if (networkToNetworkFilterMapping[network] !== undefined) {
   selectedNetworkFilter = network;
 }
 
-window.curvySDK = await init(
-  {
-    apiKey,
-  },
-  apiBaseUrl,
-  selectedNetworkFilter,
-);
+window.curvySDK = await CurvySDK.init(apiKey, selectedNetworkFilter, apiBaseUrl);
 
 // Get networks from the SDK
 const networks = await window.curvySDK.GetNetworks();

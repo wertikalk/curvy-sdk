@@ -16,6 +16,10 @@ import type {
 import { toSlug } from "@/utils/slug";
 
 export class APIClient extends HttpClient implements IAPIClient {
+  updateBearerToken = (bearer: string) => {
+    return this._updateBearerToken(bearer);
+  };
+
   announcement = {
     CreateAnnouncement: async (body: CreateAnnouncementRequestBody) => {
       return await this.request<CreateAnnouncementReturnType>({
@@ -97,9 +101,6 @@ export class APIClient extends HttpClient implements IAPIClient {
   };
 
   auth = {
-    UpdateBearerToken: async (newBearerToken: string) => {
-      return this.UpdateBearerToken(newBearerToken);
-    },
     GetBearerTotp: async () => {
       return (
         await this.request<{
@@ -128,7 +129,7 @@ export class APIClient extends HttpClient implements IAPIClient {
           success: boolean;
           token: string;
         }>({
-          method: "POST",
+          method: "GET",
           path: "/auth/renew",
         })
       ).token;

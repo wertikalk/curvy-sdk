@@ -11,31 +11,31 @@ type RequestOptions = {
 };
 
 class HttpClient {
-  private apiKey: string;
-  private bearerToken?: string;
+  #apiKey: string;
+  #bearerToken?: string;
   protected readonly apiBaseUrl: string;
 
   constructor(apiKey: string, apiBaseUrl?: string) {
-    this.apiKey = apiKey;
+    this.#apiKey = apiKey;
     this.apiBaseUrl = apiBaseUrl || "https://api.curvy.box";
   }
 
   // Method to update the bearer token (for token refresh scenarios)
-  protected UpdateBearerToken(newBearerToken: string): void {
-    this.bearerToken = newBearerToken;
+  protected _updateBearerToken(bearer: string): void {
+    this.#bearerToken = bearer;
   }
 
   private getHeaders(): Record<string, string> {
     const baseHeaders = {
       "Content-Type": "application/json",
       "User-Agent": "curvy-sdk",
-      "X-Curvy-API-Key": this.apiKey,
+      "X-Curvy-API-Key": this.#apiKey,
     };
 
-    if (this.bearerToken) {
+    if (this.#bearerToken) {
       return {
         ...baseHeaders,
-        Authorization: `Bearer ${this.bearerToken}`,
+        Authorization: `Bearer ${this.#bearerToken}`,
       };
     }
 

@@ -6,6 +6,7 @@ import type {
   STARKNET_NETWORKS,
   TOKENS,
 } from "@/constants/networks";
+import type { ScannedAnnouncement } from "@/types";
 import type { Network } from "@/types/api";
 
 // biome-ignore lint/suspicious/noExplicitAny: Need to allow any for generic type
@@ -21,17 +22,7 @@ type CurvyAddressBalance = {
 };
 
 // biome-ignore lint/suspicious/noExplicitAny: Need to allow any for generic type
-interface CurvyAddress<T extends NETWORK_FLAVOUR_VALUES = any> {
-  id: string;
-  createdAt: string;
-
-  publicKey: string;
-  ephemeralPublicKey: string;
-  address: string;
-
-  flavour: T;
-  networkId: number;
-
+interface CurvyAddress<T extends NETWORK_FLAVOUR_VALUES = any> extends ScannedAnnouncement {
   balances: CurvyAddressBalances<T>;
 
   setBalance: (network: Network, data: { symbol: string; balance: bigint; tokenAddress: string | undefined }) => void;

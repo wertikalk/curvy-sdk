@@ -33,6 +33,16 @@ type CoreScanReturnType = {
   spendingPrivKeys: Array<string>;
 };
 
+type CoreViewerScanArgs = {
+  v: string;
+  K: string;
+  Rs: Array<string>;
+  viewTags: Array<string>;
+};
+type CoreViewerScanReturnType = {
+  spendingPubKeys: Array<string>;
+};
+
 export type {
   CurvyKeyPairs,
   CurvyPublicKeys,
@@ -41,4 +51,6 @@ export type {
   CoreSendReturnType,
   CoreScanArgs,
   CoreScanReturnType,
+  CoreViewerScanArgs,
+  CoreViewerScanReturnType,
 };

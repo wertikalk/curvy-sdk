@@ -1,6 +1,8 @@
 import { getAddress } from "viem";
 
 import type { NETWORK_FLAVOUR_VALUES } from "@/constants/networks";
+import type { CurvyAddress } from "@/curvy-address/interface";
+import { NewMultiRPC } from "@/rpc/factory";
 import type { StarknetFeeEstimate } from "@/rpc/starknet";
 import type { Currency, Network } from "@/types/api";
 import { Signature } from "ethers";
@@ -25,9 +27,7 @@ import {
   type SyncProgressEvent,
   type SyncStartedEvent,
 } from "./events";
-import { NewMultiRPC } from "./rpc/factory";
 import type MultiRPC from "./rpc/multi";
-import type CurvyStealthAddress from "./stealth-address";
 import { ArrayAnnouncementStorage } from "./storage/announcement-storage";
 import type { AnnouncementStorageInterface } from "./storage/interface";
 import { arrayBufferToHex } from "./utils/arrayBuffer";
@@ -38,13 +38,15 @@ import { CurvyWallet } from "./wallet";
 import { WalletManager } from "./wallet-manager";
 
 class CurvySDK {
-  protected readonly client: APIClient;
-  private readonly emitter: CurvyEventEmitter;
+  readonly #client: APIClient;
+  readonly #emitter: CurvyEventEmitter;
+  readonly #core: Core;
+  #networks: Network[];
+
   private readonly announcementStorage: AnnouncementStorageInterface;
-  private walletManager: WalletManager;
-  private networks: Network[] = [];
-  public core: Core;
-  public RPC: MultiRPC | undefined;
+
+  readonly walletManager: WalletManager;
+  RPC: MultiRPC | undefined;
 
   private constructor(
     apiKey: string,
@@ -52,11 +54,12 @@ class CurvySDK {
     apiBaseUrl?: string,
     announcementStorage?: AnnouncementStorageInterface,
   ) {
-    this.core = core;
-    this.client = new APIClient(apiKey, apiBaseUrl);
+    this.#core = core;
+    this.#client = new APIClient(apiKey, apiBaseUrl);
+    this.#emitter = new CurvyEventEmitter();
+    this.#networks = [];
     this.announcementStorage = announcementStorage ?? new ArrayAnnouncementStorage();
-    this.emitter = new CurvyEventEmitter();
-    this.walletManager = new WalletManager(this.client, this.emitter, this.announcementStorage, this.core);
+    this.walletManager = new WalletManager(this.#client, this.#emitter, this.announcementStorage, this.#core);
   }
 
   static async init(
@@ -69,6 +72,7 @@ class CurvySDK {
     const core = await Core.init(wasmUrl);
 
     const sdk = new CurvySDK(apiKey, core, apiBaseUrl, storage);
+    sdk.#networks = await sdk.#client.network.GetNetworks();
 
     if (networkFilter === undefined) {
       await sdk.SetActiveNetworks(true as NetworkFilter); // testnets only
@@ -77,11 +81,6 @@ class CurvySDK {
     }
 
     return sdk;
-  }
-
-  // Method to update the bearer token (useful for token refresh)
-  public updateBearerToken(newBearerToken: string): void {
-    this.client.auth.UpdateBearerToken(newBearerToken);
   }
 
   public GetNetworkAndCurrencyFromBalanceIdentifier(
@@ -103,18 +102,10 @@ class CurvySDK {
   }
 
   public GetWallets(): CurvyWallet[] {
-    return this.walletManager.GetWallets();
+    return this.walletManager.wallets;
   }
 
-  public async SyncOnce(): Promise<void> {
-    await this.walletManager.SyncOnce();
-  }
-
-  public StartSync(): void {
-    this.walletManager.StartSync();
-  }
-
-  public GetStealthAddress(address: string): CurvyStealthAddress | undefined {
+  public GetStealthAddress(address: string): CurvyAddress | undefined {
     for (const wallet of this.GetWallets()) {
       for (const stealthAddress of wallet.stealthAddresses) {
         if (stealthAddress.address === address) {
@@ -125,11 +116,11 @@ class CurvySDK {
   }
 
   public GetNetworks(networkFilter: NetworkFilter = undefined): Network[] {
-    return filterNetworks(this.networks, networkFilter);
+    return filterNetworks(this.#networks, networkFilter);
   }
 
   public GetNetwork(networkFilter: NetworkFilter = undefined): Network {
-    const networks = filterNetworks(this.networks, networkFilter);
+    const networks = filterNetworks(this.#networks, networkFilter);
 
     if (networks.length === 0) {
       throw new Error(`Expected exactly one, but no network found with filter ${networkFilter}`);
@@ -143,7 +134,7 @@ class CurvySDK {
   }
 
   public async GetNewStealthAddressForUser(networkIdentifier: NetworkFilter, handle: string): Promise<`0x${string}`> {
-    const { data: recipientDetails } = await this.client.user.ResolveCurvyHandle(handle);
+    const { data: recipientDetails } = await this.#client.user.ResolveCurvyHandle(handle);
 
     if (!recipientDetails) {
       throw new Error(`Handle ${handle} not found`);
@@ -153,7 +144,7 @@ class CurvySDK {
 
     const {
       announcement: { recipientStealthPublicKey, ephemeralPublicKey, viewTag },
-    } = this.core.send(spendingKey, viewingKey) as {
+    } = this.#core.send(spendingKey, viewingKey) as {
       announcement: { recipientStealthPublicKey: string; ephemeralPublicKey: string; viewTag: string };
     };
 
@@ -163,7 +154,7 @@ class CurvySDK {
 
     if (!derivedAddress) throw new Error("Couldn't derive address!");
 
-    const response = await this.client.announcement.CreateAnnouncement({
+    const response = await this.#client.announcement.CreateAnnouncement({
       recipientStealthAddress: derivedAddress,
       recipientStealthPublicKey,
       network_id: network.id,
@@ -177,7 +168,7 @@ class CurvySDK {
   }
 
   public async Send(
-    from: CurvyStealthAddress,
+    from: CurvyAddress,
     networkIdentifier: NetworkFilter,
     to: string,
     amount: string,
@@ -190,16 +181,18 @@ class CurvySDK {
       toAddress = await this.GetNewStealthAddressForUser(networkIdentifier, to);
     }
 
-    return this.RPC?.Network(networkIdentifier).SendToAddress(from, toAddress, amount, currency, fee);
+    const {
+      spendingPrivKeys: [privateKey],
+    } = this.#core.scan("", "", [from]);
+
+    return this.RPC?.Network(networkIdentifier).SendToAddress(from, privateKey, toAddress, amount, currency, fee);
   }
 
   public async SetActiveNetworks(networkFilter: NetworkFilter) {
     const networks = this.GetNetworks(networkFilter);
-
     if (!networks.length) {
       throw new Error(`Network array is empty after filtering with ${networkFilter}`);
     }
-
     this.RPC = await NewMultiRPC(networks);
   }
 
@@ -303,19 +296,17 @@ class CurvySDK {
       throw new Error("Unrecognized signature format!");
     }
 
-    const [s, v] = computePrivateKeys(sigS, sigR);
+    const { s, v } = computePrivateKeys(sigS, sigR);
 
-    const { S, V } = this.core.getPublicKeys(s, v);
+    const keyPairs = this.#core.getCurvyKeys(s, v);
 
-    const keyPairs = { s, v, S, V };
-
-    const curvyHandle = await this.client.user.GetCurvyHandleByOwnerAddress(address);
+    const curvyHandle = await this.#client.user.GetCurvyHandleByOwnerAddress(address);
 
     if (!curvyHandle) {
       throw new Error(`No Curvy handle found for owner address: ${ownerAddress}`);
     }
 
-    const { data: ownerDetails } = await this.client.user.ResolveCurvyHandle(curvyHandle);
+    const { data: ownerDetails } = await this.#client.user.ResolveCurvyHandle(curvyHandle);
 
     if (!ownerDetails) throw new Error(`Handle ${curvyHandle} does not exist.`);
 
@@ -324,7 +315,7 @@ class CurvySDK {
 
     const wallet = new CurvyWallet(curvyHandle, address, keyPairs);
 
-    await this.walletManager.AddWallet(wallet);
+    await this.walletManager.addWallet(wallet);
 
     return wallet;
   }
@@ -336,49 +327,49 @@ class CurvySDK {
 
     for (const wallet of this.GetWallets()) {
       for (const stealthAddress of wallet.stealthAddresses) {
-        await this.RPC.GetBalances(stealthAddress);
+        await this.RPC.getBalances(stealthAddress);
       }
     }
   }
 
   // Subscribe to sync started events
   public onSyncStarted(listener: (event: SyncStartedEvent) => void): void {
-    this.emitter.on(SYNC_STARTED_EVENT, listener);
+    this.#emitter.on(SYNC_STARTED_EVENT, listener);
   }
 
   // Subscribe to sync progress events
   public onSyncProgress(listener: (event: SyncProgressEvent) => void): void {
-    this.emitter.on(SYNC_PROGRESS_EVENT, listener);
+    this.#emitter.on(SYNC_PROGRESS_EVENT, listener);
   }
 
   // Subscribe to sync complete events
   public onSyncComplete(listener: (event: SyncProgressEvent) => void): void {
-    this.emitter.on(SYNC_COMPLETE_EVENT, listener);
+    this.#emitter.on(SYNC_COMPLETE_EVENT, listener);
   }
 
   // Subscribe to sync error events
   public onSyncError(listener: (event: SyncErrorEvent) => void): void {
-    this.emitter.on(SYNC_ERROR_EVENT, listener);
+    this.#emitter.on(SYNC_ERROR_EVENT, listener);
   }
 
   // Subscribe to scan progress events
   public onScanProgress(listener: (event: ScanErrorEvent) => void): void {
-    this.emitter.on(SCAN_PROGRESS_EVENT, listener);
+    this.#emitter.on(SCAN_PROGRESS_EVENT, listener);
   }
 
   // Subscribe to scan complete events
   public onScanComplete(listener: (event: ScanCompleteEvent) => void): void {
-    this.emitter.on(SCAN_COMPLETE_EVENT, listener);
+    this.#emitter.on(SCAN_COMPLETE_EVENT, listener);
   }
 
   // Subscribe to scan match events
   public onScanMatch(listener: (event: ScanMatchEvent) => void): void {
-    this.emitter.on(SCAN_MATCH_EVENT, listener);
+    this.#emitter.on(SCAN_MATCH_EVENT, listener);
   }
 
   // Subscribe to scan error events
   public onScanError(listener: (event: ScanErrorEvent) => void): void {
-    this.emitter.on(SCAN_ERROR_EVENT, listener);
+    this.#emitter.on(SCAN_ERROR_EVENT, listener);
   }
 }
 

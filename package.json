@@ -1,7 +1,7 @@
 {
     "name": "@0xcurvy/curvy-sdk",
     "license": "MIT",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "repository": "https://github.com/0xCurvy/curvy-sdk",
     "type": "module",
     "main": "./dist/esm/index.js",
@@ -26,7 +26,7 @@
     "scripts": {
         "build": "tsup",
         "build:example": "tsup src/exports/index.ts --format esm --dts --dts-resolve --clean --out-dir example/curvy-os/dist --platform browser --target es2022",
-        "run:curvy-os": "pnpm build:example && cd ./example/curvy-os && pnpm start",
+        "run:curvy-os": "rm -rf dist && pnpm build && cd ./example/curvy-os && rm -rf ./node_modules && rm -rf ./dist && pnpm i && pnpm start",
         "clean": "rimraf dist",
         "check": "biome check --write ./src",
         "format": "biome format --write ./src",

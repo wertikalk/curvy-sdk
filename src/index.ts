@@ -4,16 +4,16 @@ import type { NetworkFilter } from "./utils/network";
 
 // Single init function that supports both authentication methods
 export const init = async (
-  authConfig: AuthConfig,
-  apiBaseUrl?: string,
-  networkFilter: NetworkFilter = undefined,
-  wasmUrl?: string,
+    authConfig: AuthConfig,
+    apiBaseUrl?: string,
+    networkFilter: NetworkFilter = undefined,
+    wasmUrl?: string
 ): Promise<CurvySDK> => {
-  const sdk = new CurvySDK(authConfig, apiBaseUrl);
+    const sdk = new CurvySDK(authConfig, apiBaseUrl);
 
-  await sdk.init(networkFilter, wasmUrl);
+    await sdk.init(networkFilter, wasmUrl);
 
-  return sdk;
+    return sdk;
 };
 
 // Export main classes and types

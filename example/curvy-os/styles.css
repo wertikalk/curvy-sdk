@@ -108,3 +108,16 @@ menu[role="tablist"] > li {
     padding: 7px;
     cursor: pointer;
 }
+
+#curvy-features {
+    margin-top: 0px !important;
+    margin-bottom: 3px;
+    width: 400px;
+}
+
+#curvy-features > div[role="sub-tab-content"] {
+    padding: 5px 10px;
+    cursor: pointer;
+    position: absolute;
+    top: 0;
+}

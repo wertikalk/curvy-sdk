@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Your description here" />
     <meta name="author" content="Your Name" />
-    <title>Document</title>
+    <link rel="icon" type="image/png" href="favicon-32x32.png" />
+    <title>Curvy OS</title>
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="https://unpkg.com/98.css" />
 </head>
@@ -99,42 +100,75 @@
                 </aside>
                 <main>
                     <fieldset>
-                        <menu role="tablist">
-                            <li role="tab" aria-selected="true" data-tab-id="xxx" onclick="showTabContent('announcementsTab')">
-                                <img src="https://win98icons.alexmeub.com/icons/png/users_key-1.png" alt="Key Icon" style="width: 12px; height: 12px; margin-right: 4px" />
-                                Send Funds
+                        <menu id="curvy-features" role="tablist">
+                            <li role="tabx" aria-selected="false" data-tab-id="xxx" onclick="">
+                                <b>Features:</b>
                             </li>
-                            <li role="tab" aria-selected="false" data-tab-id="xxx" onclick="showTabContent('announcementsTab')">
+                            <li role="tab" aria-selected="true" data-tab-id="xxx" onclick="showSubTabContent('walletsTab', 'send-funds-content')">
                                 <img src="https://win98icons.alexmeub.com/icons/png/users_key-1.png" alt="Key Icon" style="width: 12px; height: 12px; margin-right: 4px" />
-                                CSUC
+                                Legacy
+                            </li>
+                            <li role="tab" aria-selected="false" data-tab-id="xxx" onclick="showSubTabContent('walletsTab', 'csuc-content')">
+                                <img src="https://win98icons.alexmeub.com/icons/png/users_key-1.png" alt="Key Icon" style="width: 12px; height: 12px; margin-right: 4px" />
+                                CSUC:Onboarding
                             </li>
                         </menu>
-                        <div class="field-row">
-                            <label for="fromAddress">From:</label>
-                            <input id="fromAddress" disabled type="text" placeholder="Select an address from the list" />
+                        <div id ="send-funds-content" role="sub-tab-content">
+                            <div class="field-row">
+                                <label for="fromAddress">From:</label>
+                                <input id="fromAddress" disabled type="text" placeholder="Select an address from the list" />
+                            </div>
+                            <div class="field-row">
+                                <label for="toAddress">To:</label>
+                                <input id="toAddress" type="text" placeholder="Enter a Curvy handle or address" />
+                            </div>
+                            <div class="field-row">
+                                <label for="amount">Amount:</label>
+                                <input id="amount" type="text" placeholder="0.01" />
+                            </div>
+                            <div class="field-row">
+                                <label for="currency">Currency:</label>
+                                <input type="text" id="currency" disabled />
+                            </div>
+                            <div class="field-row">
+                                <label for="network">Network:</label>
+                                <input type="text" id="network" disabled />
+                            </div>
+                            <div class="field-row">
+                                <label for="fee">Fee:</label>
+                                <input type="text" disabled id="fee" value="-" />
+                            </div>
+                            <button onClick="estimateFee()" id="estimate-fee" disabled>Estimate fees</button>
+                            <button onClick="send()" id="send" disabled>Send</button>
                         </div>
-                        <div class="field-row">
-                            <label for="toAddress">To:</label>
-                            <input id="toAddress" type="text" placeholder="Enter a Curvy handle or address" />
+
+                        <div id ="csuc-content" role="sub-tab-content">
+                            <div class="field-row">
+                                <label for="fromAddress">From:</label>
+                                <input id="csuc-fromAddress" disabled type="text" placeholder="Select an address from the list" />
+                            </div>
+                            <div class="field-row">
+                                <label for="toAddress">CSUC::To:</label>
+                                <input id="csuc-toAddress" type="text" placeholder="Enter a Curvy handle or address" />
+                            </div>
+                            <div class="field-row">
+                                <label for="amount">Amount:</label>
+                                <input id="csuc-amount" type="text" placeholder="0.01" />
+                            </div>
+                            <div class="field-row">
+                                <label for="currency">Currency:</label>
+                                <input type="text" id="csuc-currency" disabled />
+                            </div>
+                            <div class="field-row">
+                                <label for="network">Network:</label>
+                                <input type="text" id="csuc-network" disabled />
+                            </div>
+                            <div class="field-row">
+                                <label for="fee">Fee:</label>
+                                <input type="text" disabled id="csuc-fee" value="-" />
+                            </div>
+                            <button onClick="transferIntoCSUC()" id="csuc-transfer">Transfer</button>
                         </div>
-                        <div class="field-row">
-                            <label for="amount">Amount:</label>
-                            <input id="amount" type="text" placeholder="0.01" />
-                        </div>
-                        <div class="field-row">
-                            <label for="currency">Currency:</label>
-                            <input type="text" id="currency" disabled />
-                        </div>
-                        <div class="field-row">
-                            <label for="network">Network:</label>
-                            <input type="text" id="network" disabled />
-                        </div>
-                        <div class="field-row">
-                            <label for="fee">Fee:</label>
-                            <input type="text" disabled id="fee" value="-" />
-                        </div>
-                        <button onClick="estimateFee()" id="estimate-fee" disabled>Estimate fees</button>
-                        <button onClick="send2()" id="send" disabled>Send</button>
                     </fieldset>
                     <fieldset>
                         <legend>Resolve Curvy handle to stealth address</legend>

@@ -2,7 +2,7 @@ import { AddressScanner } from "@/addressScanner";
 import type { APIClient } from "@/client/client";
 import type { Core } from "@/core";
 import type { CurvyEventEmitter } from "@/events";
-import type { AnnouncementStorageInterface } from "@/storage/interface";
+import type { StorageInterface } from "@/storage/interface";
 import { signJwtNonce } from "@/utils/helpers";
 import type { CurvyWallet } from "@/wallet";
 
@@ -13,12 +13,14 @@ export class WalletManager {
   readonly #apiClient: APIClient;
   readonly #addressScanner: AddressScanner;
   #scanInterval: NodeJS.Timeout | null;
+  readonly #storage: StorageInterface;
 
   activeWallet: CurvyWallet | null;
 
-  constructor(client: APIClient, emitter: CurvyEventEmitter, storage: AnnouncementStorageInterface, core: Core) {
+  constructor(client: APIClient, emitter: CurvyEventEmitter, storage: StorageInterface, core: Core) {
     this.#apiClient = client;
     this.#wallets = new Map<string, CurvyWallet>();
+    this.#storage = storage;
     this.#addressScanner = new AddressScanner(storage, core, client, emitter);
 
     this.#scanInterval = null;
@@ -29,13 +31,13 @@ export class WalletManager {
     return Array.from(this.#wallets.values());
   }
 
-  public getWalletByHandle(curvyHandle: string): CurvyWallet | undefined {
-    return this.#wallets.get(curvyHandle);
+  public getWalletById(id: string): CurvyWallet | undefined {
+    return this.#wallets.get(id);
   }
 
   async setActiveWallet(wallet: CurvyWallet) {
-    if (!this.#wallets.has(wallet.curvyHandle)) {
-      throw new Error(`Wallet with curvyHandle ${wallet.curvyHandle} does not exist.`);
+    if (!this.#wallets.has(wallet.id)) {
+      throw new Error(`Wallet with id ${wallet.id} does not exist.`);
     }
 
     this.activeWallet = wallet;
@@ -56,13 +58,18 @@ export class WalletManager {
   }
 
   async addWallet(wallet: CurvyWallet): Promise<void> {
-    this.#wallets.set(wallet.curvyHandle, wallet);
+    this.#wallets.set(wallet.id, wallet);
 
     if (!this.activeWallet) await this.setActiveWallet(wallet);
 
+    await this.#storage.storeCurvyWallet(wallet);
+
     if (!this.#scanInterval) {
       this.startIntervalScan();
+      return;
     }
+
+    await this.scanWallet(wallet);
   }
 
   async scanWallet(wallet: CurvyWallet): Promise<void> {

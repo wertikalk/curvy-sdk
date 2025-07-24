@@ -1,7 +1,6 @@
 import type { EVM_NETWORKS, NETWORK_FLAVOUR } from "@/constants/networks";
 import { evmMulticall3Abi } from "@/contracts/evm/abi/multicall3";
-import type { EVMCurvyAddress } from "@/curvy-address/evm";
-import type { CurvyAddressBalances } from "@/curvy-address/interface";
+import type { CurvyAddress, CurvyAddressBalances } from "@/curvy-address/interface";
 import type { HexString } from "@/types/helper";
 import { networkGroupToSlug } from "@/utils/helpers";
 import {
@@ -59,7 +58,7 @@ export default class EVMRPC extends RPC {
     });
   }
 
-  async getBalances(stealthAddress: EVMCurvyAddress) {
+  async getBalances(stealthAddress: CurvyAddress) {
     const evmMulticall = getContract({
       abi: evmMulticall3Abi,
       address: this.network.multiCallContractAddress as Address,
@@ -94,9 +93,10 @@ export default class EVMRPC extends RPC {
     } = await evmMulticall.simulate.aggregate([calls]);
 
     const networkSlug = networkGroupToSlug(this.network) as EVM_NETWORKS;
-    const balances = tokenBalances
+
+    return tokenBalances
       .map((encodedTokenBalance, idx) => {
-        const { contract_address: tokenAddress, symbol } = this.network.currencies[idx];
+        const { contract_address: tokenAddress, symbol, decimals } = this.network.currencies[idx];
 
         let balance = 0n;
 
@@ -113,24 +113,21 @@ export default class EVMRPC extends RPC {
             data: encodedTokenBalance,
           });
 
-        return balance ? { balance, symbol, tokenAddress } : null;
+        return balance ? { balance, symbol, tokenAddress, decimals } : null;
       })
       .filter(Boolean)
-      .reduce<CurvyAddressBalances<NETWORK_FLAVOUR["EVM"]>>((res, { balance, symbol, tokenAddress }) => {
+      .reduce<CurvyAddressBalances<NETWORK_FLAVOUR["EVM"]>>((res, { symbol, ...rest }) => {
         if (!res[networkSlug]) res[networkSlug] = Object.create(null);
-        res[networkSlug][symbol] = { balance, tokenAddress };
+        res[networkSlug][symbol] = rest;
         return res;
       }, Object.create(null));
-
-    stealthAddress.setBalances(this.network, balances);
-    return stealthAddress.balances;
   }
 
-  async getBalance(stealthAddress: EVMCurvyAddress, symbol: string): Promise<bigint> {
+  async getBalance(stealthAddress: CurvyAddress, symbol: string) {
     const token = this.network.currencies.find((c) => c.symbol === symbol);
     if (!token) throw new Error(`Token ${symbol} not found.`);
 
-    const tokenAddress = token.contract_address;
+    const { contract_address: tokenAddress, decimals } = token;
 
     let balance = 0n;
 
@@ -147,8 +144,7 @@ export default class EVMRPC extends RPC {
       args: [stealthAddress.address as Address],
     });
 
-    stealthAddress.setBalance(this.network, { symbol, balance, tokenAddress });
-    return balance;
+    return { balance, tokenAddress, decimals };
   }
 
   async _PrepareTx(privateKey: HexString, address: Address, amount: string, currency: string) {
@@ -207,7 +203,7 @@ export default class EVMRPC extends RPC {
   }
 
   async SendToAddress(
-    _curvyAddress: EVMCurvyAddress,
+    _curvyAddress: CurvyAddress,
     privateKey: HexString,
     address: string,
     amount: string,
@@ -221,7 +217,7 @@ export default class EVMRPC extends RPC {
   }
 
   async EstimateFee(
-    _curvyAddress: EVMCurvyAddress,
+    _curvyAddress: CurvyAddress,
     privateKey: HexString,
     address: Address,
     amount: string,

@@ -1,25 +1,23 @@
 import type { IAPIClient } from "@/client/interface";
-import { NETWORK_FLAVOUR } from "@/constants/networks";
 import type { Core } from "@/core";
-import { EVMCurvyAddress } from "@/curvy-address/evm";
 import type { CurvyAddress } from "@/curvy-address/interface";
-import { StarknetCurvyAddress } from "@/curvy-address/starknet";
 import type { CurvyEventEmitter } from "@/events";
-import type { AnnouncementStorageInterface } from "@/storage/interface";
+import type { StorageInterface } from "@/storage/interface";
 import type { RawAnnoucement } from "@/types/api";
 import { deriveAddress } from "@/utils/deriveAddress";
 import type { CurvyWallet } from "@/wallet";
+import dayjs from "dayjs";
 
 const SYNC_BATCH_SIZE = 200;
 
 class AddressScanner {
-  private storage: AnnouncementStorageInterface;
+  private storage: StorageInterface;
   private client: IAPIClient;
   private core: Core;
   private emitter: CurvyEventEmitter;
   private isSyncing: boolean;
 
-  constructor(storage: AnnouncementStorageInterface, core: Core, client: IAPIClient, emitter: CurvyEventEmitter) {
+  constructor(storage: StorageInterface, core: Core, client: IAPIClient, emitter: CurvyEventEmitter) {
     this.storage = storage;
     this.core = core;
     this.client = client;
@@ -34,128 +32,109 @@ class AddressScanner {
 
     this.isSyncing = true;
 
-    let totalProcessed = 0;
-    let syncJustStarted = true;
+    for (const wallet of wallets) {
+      let totalProcessed = 0;
+      let syncJustStarted = true;
 
-    try {
-      // Process in batches
-      let total = Number.POSITIVE_INFINITY; // We temporarily set the total to infinity until we know the total.
+      try {
+        // Process in batches
+        let total = Number.POSITIVE_INFINITY; // We temporarily set the total to infinity until we know the total.
 
-      const latestTimestampBeforeSync = await this.storage.GetLatestTimestamp();
+        const { oldest, latest } = await this.storage.getScanCursors(wallet.id);
 
-      const initialSync = !latestTimestampBeforeSync;
-      let startTime = latestTimestampBeforeSync;
-      let endTime: Date | undefined;
+        const initialSync = !latest;
+        let startTime = latest;
+        let endTime: number | undefined;
 
-      /**
-       * if we are syncing for the first time, we want to get the announcements backwards
-       * if we are syncing for subsequent times, we want to get the announcement forwards
-       *
-       * first time = get all, then get up to latest (DESC)
-       * second time = get from latest, then get from latest (ASC)
-       *
-       */
-      while (totalProcessed < total) {
-        const response = await this.client.announcement.GetAnnouncements(startTime, endTime, SYNC_BATCH_SIZE);
+        /**
+         * if we are syncing for the first time, we want to get the announcements backwards
+         * if we are syncing for subsequent times, we want to get the announcement forwards
+         *
+         * first time = get all, then get up to latest (DESC)
+         * second time = get from latest, then get from latest (ASC)
+         *
+         */
+        while (totalProcessed < total) {
+          const { announcements, total: respTotal } = await this.client.announcement.GetAnnouncements(
+            startTime,
+            endTime,
+            SYNC_BATCH_SIZE,
+          );
 
-        if (syncJustStarted) {
-          total = response.total;
-          this.emitter.emitSyncStarted({
-            total,
+          const newOldest = Math.min(oldest ?? Number.POSITIVE_INFINITY, +dayjs(announcements.at(-1)?.createdAt));
+          const newLatest = Math.max(latest ?? 0, +dayjs(announcements.at(0)?.createdAt));
+
+          await this.storage.updateCurvyWalletData(wallet.id, {
+            scanCursors: { latest: newLatest, oldest: newOldest },
           });
 
+          if (syncJustStarted) {
+            total = respTotal;
+            this.emitter.emitSyncStarted({
+              total,
+            });
+          }
+
           syncJustStarted = false;
+
+          await this.#scan(wallet, announcements);
+
+          totalProcessed += announcements.length;
+
+          // Emit progress for each batch
+          this.emitter.emitSyncProgress({
+            synced: totalProcessed,
+            announcements,
+            remaining: total - totalProcessed,
+          });
+
+          if (initialSync) {
+            endTime = await this.storage.getOldestScanCursor(wallet.id);
+          } else {
+            startTime = await this.storage.getLatestScanCursor(wallet.id);
+          }
         }
 
-        await this.#scan(wallets, response.announcements);
-
-        for (const announcement of response.announcements) {
-          await this.storage.WriteAnnouncement(announcement);
-        }
-
-        totalProcessed += response.announcements.length;
-
-        // Emit progress for each batch
-        this.emitter.emitSyncProgress({
-          synced: totalProcessed,
-          announcements: response.announcements,
-          remaining: total - totalProcessed,
+        this.emitter.emitSyncComplete({
+          totalSynced: totalProcessed,
         });
-
-        if (initialSync) {
-          endTime = await this.storage.GetEarliestTimestamp();
-        } else {
-          startTime = await this.storage.GetLatestTimestamp();
-        }
+      } catch (error) {
+        this.emitter.emitSyncError({
+          error: error as Error,
+        });
+        throw error;
+      } finally {
+        this.isSyncing = false;
       }
-
-      this.emitter.emitSyncComplete({
-        totalSynced: totalProcessed,
-      });
-    } catch (error) {
-      this.emitter.emitSyncError({
-        error: error as Error,
-      });
-      throw error;
-    } finally {
-      this.isSyncing = false;
     }
   }
 
-  async #scan(wallets: CurvyWallet[], announcements: RawAnnoucement[]) {
-    for (const wallet of wallets) {
-      let matched = 0;
+  async #scan(wallet: CurvyWallet, announcements: RawAnnoucement[]) {
+    let matched = 0;
 
-      const keyPairs = wallet.keyPairs;
-      const { spendingPubKeys, spendingPrivKeys } = this.core.scan(keyPairs.s, keyPairs.v, announcements);
+    const keyPairs = wallet.keyPairs;
+    const { spendingPubKeys } = this.core.scan(keyPairs.s, keyPairs.v, announcements);
 
-      for (const [index, publicKey] of spendingPubKeys.entries()) {
-        if (publicKey === "") continue;
-        const privateKey = spendingPrivKeys[index];
+    const addresses = spendingPubKeys
+      .map((publicKey, index) => {
+        if (publicKey === "") return null;
 
         const announcement = announcements[index];
+        const address = deriveAddress(publicKey, announcement.networkFlavour);
 
-        let stealthAddress: CurvyAddress;
-        switch (announcement.networkFlavour) {
-          case NETWORK_FLAVOUR.EVM: {
-            stealthAddress = new EVMCurvyAddress({
-              ...announcement,
-              publicKey,
-              privateKey,
-              address: deriveAddress(publicKey, announcement.networkFlavour),
-            });
-            break;
-          }
-          case NETWORK_FLAVOUR.STARKNET: {
-            stealthAddress = new StarknetCurvyAddress({
-              ...announcement,
-              publicKey,
-              privateKey,
-              address: deriveAddress(publicKey, announcement.networkFlavour),
-            });
-            break;
-          }
-          default: {
-            throw new Error(`Unsupported network flavour: ${announcement.networkFlavour}`);
-          }
-        }
+        return { ...announcement, publicKey, address, balances: {}, walletId: wallet.id } satisfies CurvyAddress;
+      })
+      .filter(Boolean);
 
-        wallet.addStealthAddress(stealthAddress);
+    await this.storage.storeManyCurvyAddresses(addresses);
 
-        matched++;
+    matched++;
 
-        this.emitter.emitScanMatch({
-          wallet,
-          stealthAddress,
-        });
-      }
-
-      this.emitter.emitScanProgress({
-        scanned: announcements.length,
-        wallet,
-        total: announcements.length,
-      });
-    }
+    this.emitter.emitScanProgress({
+      scanned: matched,
+      wallet,
+      total: announcements.length,
+    });
   }
 }
 

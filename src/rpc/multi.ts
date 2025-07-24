@@ -1,7 +1,5 @@
 import type { NETWORK_FLAVOUR } from "@/constants/networks";
-import type { EVMCurvyAddress } from "@/curvy-address/evm";
-import type { CurvyAddressBalances } from "@/curvy-address/interface";
-import type { StarknetCurvyAddress } from "@/curvy-address/starknet";
+import type { CurvyAddressBalances, EVMCurvyAddress, StarknetCurvyAddress } from "@/curvy-address/interface";
 import { type NetworkFilter, filterNetworks } from "@/utils/network";
 import type RPC from "./abstract";
 

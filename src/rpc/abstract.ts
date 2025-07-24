@@ -1,4 +1,4 @@
-import type { CurvyAddress, CurvyAddressBalances } from "@/curvy-address/interface";
+import type { CurvyAddress, CurvyAddressBalance, CurvyAddressBalances } from "@/curvy-address/interface";
 import type { Network } from "@/types/api";
 import type { HexString } from "@/types/helper";
 import type { StarknetFeeEstimate } from "./starknet";
@@ -19,7 +19,7 @@ export default abstract class RPC {
 
   abstract getBalances(stealthAddress: CurvyAddress): Promise<CurvyAddressBalances>;
 
-  abstract getBalance(stealthAddress: CurvyAddress, symbol: string): Promise<bigint>;
+  abstract getBalance(stealthAddress: CurvyAddress, symbol: string): Promise<CurvyAddressBalance>;
 
   abstract SendToAddress(
     _curvyAddress: CurvyAddress,

@@ -28,15 +28,13 @@ export class APIClient extends HttpClient implements IAPIClient {
         body,
       });
     },
-    GetAnnouncements: async (startTime: Date | undefined, endTime: Date | undefined, size: number) => {
-      const queryParams: Record<string, string | number | boolean> = { size };
+    GetAnnouncements: async (startTime?: number, endTime?: number, size?: number, offset?: number) => {
+      const queryParams: Record<string, string | number | boolean> = {};
 
-      if (startTime) {
-        queryParams.startTime = startTime.getTime();
-      }
-      if (endTime) {
-        queryParams.endTime = endTime.getTime();
-      }
+      if (size) queryParams.size = size;
+      if (offset) queryParams.offset = offset;
+      if (startTime) queryParams.startTime = startTime;
+      if (endTime) queryParams.endTime = endTime;
 
       const result = await this.request<GetAnnouncementsResponse>({
         method: "GET",

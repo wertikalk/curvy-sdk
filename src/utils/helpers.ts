@@ -3,6 +3,7 @@ import type { Network } from "@/types/api";
 import { ethers } from "ethers";
 
 const isNode = typeof process !== "undefined" && process.versions != null && process.versions.node != null;
+const textEncoder = new TextEncoder();
 
 const networkGroupToSlug = (network: Network) => {
   const group = network.group.toLowerCase();
@@ -18,4 +19,14 @@ const signJwtNonce = (message: string, spendingPrivateKey: string): string => {
   return signature.serialized;
 };
 
-export { isNode, networkGroupToSlug, signJwtNonce };
+const sha256Digest = async (message: string, outputLength: number | undefined = undefined): Promise<string> => {
+  const hash = await crypto.subtle.digest("SHA-256", textEncoder.encode(message));
+  return Buffer.from(hash).toString("hex").slice(0, undefined);
+};
+
+const WALLET_ID_LENGTH = 12;
+const generateWalletId = (s: string, v: string) => {
+  return sha256Digest(JSON.stringify({ s, v }), WALLET_ID_LENGTH);
+};
+
+export { isNode, networkGroupToSlug, signJwtNonce, sha256Digest, generateWalletId, textEncoder };

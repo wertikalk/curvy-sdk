@@ -8,12 +8,21 @@ importers:
 
   .:
     dependencies:
+      buffer:
+        specifier: ^6.0.3
+        version: 6.0.3
+      dayjs:
+        specifier: ^1.11.13
+        version: 1.11.13
       ethers:
         specifier: ^6.14.4
         version: 6.14.4(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       eventemitter3:
         specifier: ^5.0.1
         version: 5.0.1
+      lodash.merge:
+        specifier: ^4.6.2
+        version: 4.6.2
       starknet:
         specifier: ^7.6.2
         version: 7.6.2
@@ -36,6 +45,9 @@ importers:
       '@total-typescript/ts-reset':
         specifier: ^0.6.1
         version: 0.6.1
+      '@types/lodash.merge':
+        specifier: ^4.6.9
+        version: 4.6.9
       commitizen:
         specifier: ^4.3.1
         version: 4.3.1(@types/node@22.15.24)(typescript@5.8.3)
@@ -538,6 +550,12 @@ packages:
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
+  '@types/lodash.merge@4.6.9':
+    resolution: {integrity: sha512-23sHDPmzd59kUgWyKGiOMO2Qb9YtqRO/x4IhkgNUiPQ1+5MUVqi6bCZeq9nBJ17msjIMbEIO5u+XW4Kz6aGUhQ==}
+
+  '@types/lodash@4.17.20':
+    resolution: {integrity: sha512-H3MHACvFUEiujabxhaI/ImO6gUrd8oOurg7LQtS7mbwIXA/cUqWrvBsaeJ23aZEPk1TAYkurjfMbSELfoCXlGA==}
+
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
 
@@ -675,6 +693,9 @@ packages:
 
   buffer@5.7.1:
     resolution: {integrity: sha512-EHcyIPBQ4BSGlvjB16k5KgAJ27CIsHY/2JBmCRReo48y9rQ3MaUzWX3KVlBa4U7MyX02HdVj0K7C3WaB3ju7FQ==}
+
+  buffer@6.0.3:
+    resolution: {integrity: sha512-FTiCpNxtwiZZHEZbcbTIcZjERVICn9yq/pDFkTl95/AxzD1naBctN7YO68riM/gLSDY7sdrMby8hofADYuuqOA==}
 
   bufferutil@4.0.9:
     resolution: {integrity: sha512-WDtdLmJvAuNNPzByAYpRo2rF1Mmradw6gvWsQKf63476DDXmomT9zUiGypLcG4ibIM67vhAj8jJRdbmEws2Aqw==}
@@ -843,6 +864,9 @@ packages:
   dargs@8.1.0:
     resolution: {integrity: sha512-wAV9QHOsNbwnWdNW2FYvE1P56wtgSbM+3SZcdGiWQILwVjACCXDCI3Ai8QlCjMDB8YK5zySiXZYBiwGmNY3lnw==}
     engines: {node: '>=12'}
+
+  dayjs@1.11.13:
+    resolution: {integrity: sha512-oaMBel6gjolK862uaPQOVTA7q3TZhuSvuMQAAglQDOWYO9A91IrAOUJEyKVlqJlHE0vq5p5UXxzdPfMH/x6xNg==}
 
   debug@4.4.1:
     resolution: {integrity: sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==}
@@ -2306,6 +2330,12 @@ snapshots:
 
   '@types/estree@1.0.8': {}
 
+  '@types/lodash.merge@4.6.9':
+    dependencies:
+      '@types/lodash': 4.17.20
+
+  '@types/lodash@4.17.20': {}
+
   '@types/ms@2.1.0':
     optional: true
 
@@ -2443,6 +2473,11 @@ snapshots:
       fill-range: 7.1.1
 
   buffer@5.7.1:
+    dependencies:
+      base64-js: 1.5.1
+      ieee754: 1.2.1
+
+  buffer@6.0.3:
     dependencies:
       base64-js: 1.5.1
       ieee754: 1.2.1
@@ -2625,6 +2660,8 @@ snapshots:
       - typescript
 
   dargs@8.1.0: {}
+
+  dayjs@1.11.13: {}
 
   debug@4.4.1:
     dependencies:

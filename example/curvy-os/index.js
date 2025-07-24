@@ -155,7 +155,6 @@ async function signInWithMetamask() {
   await window.curvySDK.AddWalletWithSignature(ownerAddress, rawSignature);
 
   closeAddWalletWindow();
-  populateWalletsTree();
 
   document.body.style.cursor = "auto";
 }
@@ -187,7 +186,6 @@ async function signInWithStarknetWallet(walletName) {
   await window.curvySDK.AddWalletWithSignature(ownerAddress, signature);
 
   closeAddWalletWindow();
-  populateWalletsTree();
 }
 
 window.signInWithStarknetWallet = signInWithStarknetWallet;
@@ -197,7 +195,7 @@ function shortenAddress(address) {
   return `${address.slice(0, 8)}...${address.slice(-4)}`;
 }
 
-function populateWalletsTree() {
+async function populateWalletsTree() {
   let totalBalance = 0;
   const walletsTree = document.getElementById("wallets");
   const hideZeroBalances = document.getElementById("hideZeroBalances").checked;
@@ -215,7 +213,7 @@ function populateWalletsTree() {
     return;
   }
 
-  for (const wallet of window.curvySDK.GetWallets()) {
+  for (const wallet of wallets) {
     // Create a new list item for `lazar.curvy.name`
     const listItem = document.createElement("li");
     const details = document.createElement("details");
@@ -226,27 +224,32 @@ function populateWalletsTree() {
     details.appendChild(summary);
 
     const ul = document.createElement("ul");
-    for (const stealthAddress of wallet.stealthAddresses) {
+    for (const stealthAddress of await window.curvySDK.storage.getCurvyAddressesByWalletId(wallet.id)) {
       const li = document.createElement("li");
       li.textContent = shortenAddress(stealthAddress.address);
 
       const balances = document.createElement("ul");
 
-      for (const balanceIdentifier in stealthAddress.balances) {
-        const [network, currency] = window.curvySDK.GetNetworkAndCurrencyFromBalanceIdentifier(balanceIdentifier);
+      const a = Object.entries(stealthAddress.balances);
+      for (const [networkSlug, tokens] of Object.entries(stealthAddress.balances)) {
+        const network = window.curvySDK.GetNetworkByNetworkSlug(networkSlug);
+        for (const [symbol, { balance, decimals }] of Object.entries(tokens)) {
+          const balanceElem = document.createElement("li");
 
-        const balance = document.createElement("li");
+          const currency = network.currencies.find((c) => c.symbol === symbol);
 
-        balance.className = "balance";
-        balance.setAttribute("onclick", "selectStealthAddress.call(this)");
-        balance.dataset.address = stealthAddress.address;
-        balance.dataset.network = network.name;
-        balance.dataset.currency = currency.symbol;
+          balanceElem.className = "balance";
+          balanceElem.setAttribute("onclick", "selectStealthAddress.call(this)");
+          balanceElem.dataset.address = stealthAddress.address;
+          balanceElem.dataset.id = stealthAddress.id;
+          balanceElem.dataset.network = network.name;
+          balanceElem.dataset.currency = symbol;
 
-        const formattedBalance = prettyPrintBalance(stealthAddress.balances[balanceIdentifier], currency.decimals);
-        balance.textContent = `${formattedBalance} ${currency.symbol}@${network.name}`;
-        balances.appendChild(balance);
-        totalBalance += Number(formattedBalance) * currency.price;
+          const formattedBalance = prettyPrintBalance(balance, decimals, 6);
+          balanceElem.textContent = `${formattedBalance} ${symbol}@${network.name}`;
+          balances.appendChild(balanceElem);
+          totalBalance += Number(formattedBalance) * currency.price;
+        }
       }
 
       if (!hideZeroBalances || Object.keys(stealthAddress.balances).length > 0) {
@@ -285,6 +288,8 @@ function selectStealthAddress() {
 
   const networkInput = document.getElementById("network");
   networkInput.value = network;
+
+  window.selectedAddressId = this.dataset.id;
 }
 
 window.selectStealthAddress = selectStealthAddress;
@@ -313,7 +318,7 @@ async function refreshBalances() {
 
   await window.curvySDK.RefreshBalances();
 
-  populateWalletsTree();
+  await populateWalletsTree();
 
   document.body.style.cursor = "auto";
 }
@@ -325,14 +330,14 @@ async function estimateFee() {
   document.getElementById("estimate-fee").disabled = true;
   document.body.style.cursor = "wait";
 
-  const stealthAddress = window.curvySDK.GetStealthAddress(document.getElementById("fromAddress").value);
+  const stealthAddress = await window.curvySDK.GetStealthAddress(window.selectedAddressId);
 
   const toAddress = document.getElementById("toAddress").value;
   const network = document.getElementById("network").value;
   const amount = document.getElementById("amount").value;
   const currency = document.getElementById("currency").value;
 
-  const fee = await window.curvySDK.RPC.Network(network).EstimateFee(stealthAddress, toAddress, amount, currency);
+  const fee = await window.curvySDK.EstimateFee(stealthAddress, network, toAddress, amount, currency);
   window.curvyEstimatedFee = fee;
   const feeAmount = window.curvySDK.RPC.Network(network).FeeToAmount(fee);
 
@@ -353,7 +358,7 @@ async function send() {
   document.getElementById("send").disabled = true;
   document.body.style.cursor = "wait";
 
-  const stealthAddress = window.curvySDK.GetStealthAddress(document.getElementById("fromAddress").value);
+  const stealthAddress = await window.curvySDK.GetStealthAddress(window.selectedAddressId);
 
   const toAddress = document.getElementById("toAddress").value;
   const network = document.getElementById("network").value;
@@ -474,6 +479,7 @@ window.curvySDK.onSyncProgress((event) => {
 
 window.curvySDK.onSyncComplete((event) => {
   addEventRow("SYNC_COMPLETE", JSON.stringify(event));
+  populateWalletsTree();
 });
 
 window.curvySDK.onScanProgress((event) => {

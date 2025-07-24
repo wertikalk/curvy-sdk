@@ -23,9 +23,10 @@ export interface IAPIClient {
     ): Promise<UpdateAnnouncementEncryptedMessageReturnType>;
     GetAnnouncementEncryptedMessage(id: string): Promise<GetAnnouncementEncryptedMessageReturnType>;
     GetAnnouncements(
-      startTime: Date | undefined,
-      endTime: Date | undefined,
-      size: number,
+      startTime?: number,
+      endTime?: number,
+      size?: number,
+      offset?: number,
     ): Promise<GetAnnouncementsReturnType>;
   };
 

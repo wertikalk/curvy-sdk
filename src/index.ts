@@ -1,10 +1,15 @@
 import { getAddress } from "viem";
 
+import { Buffer } from "buffer";
 import type { NETWORK_FLAVOUR_VALUES } from "@/constants/networks";
 import type { CurvyAddress } from "@/curvy-address/interface";
 import { NewMultiRPC } from "@/rpc/factory";
 import type { StarknetFeeEstimate } from "@/rpc/starknet";
+import type { StorageInterface } from "@/storage/interface";
+import { TemporaryStorage } from "@/storage/temporary-storage";
 import type { Currency, Network } from "@/types/api";
+import { generateWalletId } from "@/utils/helpers";
+import dayjs from "dayjs";
 import { Signature } from "ethers";
 import { APIClient } from "./client/client";
 import { getSignatureParams as evmGetSignatureParams } from "./constants/evm";
@@ -28,8 +33,6 @@ import {
   type SyncStartedEvent,
 } from "./events";
 import type MultiRPC from "./rpc/multi";
-import { ArrayAnnouncementStorage } from "./storage/announcement-storage";
-import type { AnnouncementStorageInterface } from "./storage/interface";
 import { arrayBufferToHex } from "./utils/arrayBuffer";
 import { deriveAddress } from "./utils/deriveAddress";
 import { computePrivateKeys } from "./utils/keyComputation";
@@ -37,14 +40,15 @@ import { type NetworkFilter, filterNetworks } from "./utils/network";
 import { CurvyWallet } from "./wallet";
 import { WalletManager } from "./wallet-manager";
 
+globalThis.Buffer = Buffer;
+
 class CurvySDK {
   readonly #client: APIClient;
   readonly #emitter: CurvyEventEmitter;
   readonly #core: Core;
   #networks: Network[];
 
-  private readonly announcementStorage: AnnouncementStorageInterface;
-
+  readonly storage: StorageInterface;
   readonly walletManager: WalletManager;
   RPC: MultiRPC | undefined;
 
@@ -52,21 +56,21 @@ class CurvySDK {
     apiKey: string,
     core: Core,
     apiBaseUrl?: string,
-    announcementStorage?: AnnouncementStorageInterface,
+    storage: StorageInterface = new TemporaryStorage(),
   ) {
     this.#core = core;
     this.#client = new APIClient(apiKey, apiBaseUrl);
     this.#emitter = new CurvyEventEmitter();
     this.#networks = [];
-    this.announcementStorage = announcementStorage ?? new ArrayAnnouncementStorage();
-    this.walletManager = new WalletManager(this.#client, this.#emitter, this.announcementStorage, this.#core);
+    this.storage = storage;
+    this.walletManager = new WalletManager(this.#client, this.#emitter, this.storage, this.#core);
   }
 
   static async init(
     apiKey: string,
     networkFilter: NetworkFilter = undefined,
     apiBaseUrl?: string,
-    storage?: AnnouncementStorageInterface,
+    storage?: StorageInterface,
     wasmUrl?: string,
   ) {
     const core = await Core.init(wasmUrl);
@@ -83,36 +87,25 @@ class CurvySDK {
     return sdk;
   }
 
-  public GetNetworkAndCurrencyFromBalanceIdentifier(
-    balanceIdentifier: `${string}:${string}`,
-  ): [Network, Currency] | undefined {
-    const [networkSlug, currencySymbol] = balanceIdentifier.split(":");
-    const networks = this.GetNetworks(networkSlug);
+  public GetNetworkByNetworkSlug(networkSlug: string): Network | undefined {
+    const [networkGroup, environment] = networkSlug.split("-");
+    const networks = this.GetNetworks(
+      (network) => network.group.toLowerCase() === networkGroup && (environment === "testnet") === network.testnet,
+    );
+
     if (networks.length !== 1) {
       return undefined;
     }
 
-    const currency = networks[0].currencies.find((c) => c.symbol === currencySymbol);
-
-    if (!currency) {
-      return undefined;
-    }
-
-    return [networks[0], currency];
+    return networks[0];
   }
 
   public GetWallets(): CurvyWallet[] {
     return this.walletManager.wallets;
   }
 
-  public GetStealthAddress(address: string): CurvyAddress | undefined {
-    for (const wallet of this.GetWallets()) {
-      for (const stealthAddress of wallet.stealthAddresses) {
-        if (stealthAddress.address === address) {
-          return stealthAddress;
-        }
-      }
-    }
+  public GetStealthAddress(id: string): Promise<CurvyAddress | undefined> {
+    return this.storage.getCurvyAddressById(id);
   }
 
   public GetNetworks(networkFilter: NetworkFilter = undefined): Network[] {
@@ -167,6 +160,32 @@ class CurvySDK {
     return derivedAddress;
   }
 
+  public async EstimateFee(
+    from: CurvyAddress,
+    networkIdentifier: NetworkFilter,
+    to: string,
+    amount: string,
+    currency: string,
+  ) {
+    let toAddress = to;
+
+    if (to.endsWith(".staging-curvy.name") || to.endsWith(".curvy.name")) {
+      toAddress = await this.GetNewStealthAddressForUser(networkIdentifier, to);
+    }
+
+    const wallet = this.walletManager.getWalletById(from.walletId);
+    if (!wallet) {
+      throw new Error(`Cannot send from address ${from.id} because it's wallet is not found!`);
+    }
+    const { s, v } = wallet.keyPairs;
+
+    const {
+      spendingPrivKeys: [privateKey],
+    } = this.#core.scan(s, v, [from]);
+
+    return this.RPC?.Network(networkIdentifier).EstimateFee(from, privateKey, toAddress, amount, currency);
+  }
+
   public async Send(
     from: CurvyAddress,
     networkIdentifier: NetworkFilter,
@@ -180,10 +199,15 @@ class CurvySDK {
     if (to.endsWith(".staging-curvy.name") || to.endsWith(".curvy.name")) {
       toAddress = await this.GetNewStealthAddressForUser(networkIdentifier, to);
     }
+    const wallet = this.walletManager.getWalletById(from.walletId);
+    if (!wallet) {
+      throw new Error(`Cannot send from address ${from.id} because it's wallet is not found!`);
+    }
+    const { s, v } = wallet.keyPairs;
 
     const {
       spendingPrivKeys: [privateKey],
-    } = this.#core.scan("", "", [from]);
+    } = this.#core.scan(s, v, [from]);
 
     return this.RPC?.Network(networkIdentifier).SendToAddress(from, privateKey, toAddress, amount, currency, fee);
   }
@@ -196,7 +220,7 @@ class CurvySDK {
     this.RPC = await NewMultiRPC(networks);
   }
 
-  // GetAnnouncements retrieves announcements from storage based on query parameters
+  // // GetAnnouncements retrieves announcements from storage based on query parameters
   public async GetAnnouncements(query: {
     startTime?: Date;
     endTime?: Date;
@@ -204,7 +228,7 @@ class CurvySDK {
     offset?: number;
     networkId?: number[];
   }) {
-    return this.announcementStorage.GetAnnouncements(query);
+    // return this.announcementStorage.GetAnnouncements(query);
   }
 
   public GetNativeCurrencyForNetwork(network: Network): Currency {
@@ -310,10 +334,14 @@ class CurvySDK {
 
     if (!ownerDetails) throw new Error(`Handle ${curvyHandle} does not exist.`);
 
-    if (!ownerDetails.publicKeys.some(({ viewingKey: V, spendingKey: S }) => V === keyPairs.V && S === keyPairs.S))
+    const { createdAt, publicKeys } = ownerDetails;
+
+    if (!publicKeys.some(({ viewingKey: V, spendingKey: S }) => V === keyPairs.V && S === keyPairs.S))
       throw new Error(`Wrong password for handle ${curvyHandle}.`);
 
-    const wallet = new CurvyWallet(curvyHandle, address, keyPairs);
+    const walletId = await generateWalletId(keyPairs.s, keyPairs.v);
+
+    const wallet = new CurvyWallet(walletId, +dayjs(createdAt), curvyHandle, address, keyPairs);
 
     await this.walletManager.addWallet(wallet);
 
@@ -326,8 +354,8 @@ class CurvySDK {
     }
 
     for (const wallet of this.GetWallets()) {
-      for (const stealthAddress of wallet.stealthAddresses) {
-        await this.RPC.getBalances(stealthAddress);
+      for (const address of await this.storage.getCurvyAddressesByWalletId(wallet.id)) {
+        await this.storage.updateCurvyAddress(address.id, { balances: await this.RPC.getBalances(address) });
       }
     }
   }

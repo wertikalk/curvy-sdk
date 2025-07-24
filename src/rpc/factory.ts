@@ -18,7 +18,7 @@ export async function NewRPC(network: Network): Promise<RPC> {
       throw Error("Unknown network flavour");
   }
 
-  await rpc.init();
+  rpc.init();
 
   return rpc;
 }

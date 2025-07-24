@@ -4,11 +4,10 @@ import { starknetAccountAbi } from "@/contracts/starknet/abi/account";
 import { starknetErc20Abi } from "@/contracts/starknet/abi/erc20";
 import { starknetMulticallAbi } from "@/contracts/starknet/abi/multicall";
 import type { CurvyAddressBalances } from "@/curvy-address/interface";
-import type { StarknetCurvyAddress } from "@/curvy-address/starknet";
+import type { CurvyAddress } from "@/curvy-address/interface";
 import type { HexString } from "@/types/helper";
 import { networkGroupToSlug } from "@/utils/helpers";
 import { decimalStringToHex } from "@/utils/publicKeyEncoding";
-// TODO: Rename private methods
 import {
   constants,
   Account,
@@ -53,7 +52,7 @@ export default class StarknetRPC extends RPC {
     });
   }
 
-  async getBalances(stealthAddress: StarknetCurvyAddress) {
+  async getBalances(stealthAddress: CurvyAddress) {
     const starkMulticall = new Contract(
       starknetMulticallAbi,
       this.network.multiCallContractAddress as Address,
@@ -76,33 +75,30 @@ export default class StarknetRPC extends RPC {
     const tokenBalances = await starkMulticall.aggregate(calls);
 
     const networkSlug = networkGroupToSlug(this.network) as STARKNET_NETWORKS;
-    const balances = tokenBalances
+    return tokenBalances
       .map(([low, high], idx) => {
-        const { contract_address: tokenAddress, symbol } = this.network.currencies[idx];
+        const { contract_address: tokenAddress, symbol, decimals } = this.network.currencies[idx];
 
         return {
           balance: fromUint256(low, high),
           symbol,
           tokenAddress,
+          decimals,
         };
       })
       .filter((token) => Boolean(token.balance))
-      .reduce<CurvyAddressBalances<NETWORK_FLAVOUR["STARKNET"]>>((res, { balance, symbol, tokenAddress }) => {
+      .reduce<CurvyAddressBalances<NETWORK_FLAVOUR["STARKNET"]>>((res, { symbol, ...rest }) => {
         if (!res[networkSlug]) res[networkSlug] = Object.create(null);
-        res[networkSlug][symbol] = { balance, tokenAddress };
+        res[networkSlug][symbol] = rest;
         return res;
       }, Object.create(null));
-
-    stealthAddress.setBalances(this.network, balances);
-
-    return stealthAddress.balances;
   }
 
-  async getBalance(stealthAddress: StarknetCurvyAddress, symbol: string): Promise<bigint> {
+  async getBalance(stealthAddress: CurvyAddress, symbol: string) {
     const token = this.network.currencies.find((c) => c.symbol === symbol);
     if (!token) throw new Error(`Token ${symbol} not found.`);
 
-    const tokenAddress = token.contract_address;
+    const { contract_address: tokenAddress, decimals } = token;
 
     const starkErc20 = new Contract(starknetErc20Abi, token.contract_address as Address, this.provider).typedv2(
       starknetErc20Abi,
@@ -114,13 +110,11 @@ export default class StarknetRPC extends RPC {
     if (typeof balance !== "bigint" && "low" in balance && "high" in balance)
       balance = fromUint256(balance.low, balance.high);
 
-    stealthAddress.setBalance(this.network, { balance, symbol, tokenAddress });
-
-    return balance;
+    return { balance, tokenAddress, decimals };
   }
 
   private _PrepareTx(
-    curvyAddress: StarknetCurvyAddress,
+    curvyAddress: CurvyAddress,
     privateKey: HexString,
     address: Address,
     amount: string,
@@ -164,7 +158,7 @@ export default class StarknetRPC extends RPC {
     });
   }
 
-  private async _CheckIsStarknetAccountDeployed(stealthAddress: StarknetCurvyAddress): Promise<boolean> {
+  private async _CheckIsStarknetAccountDeployed(stealthAddress: CurvyAddress): Promise<boolean> {
     return this.provider
       .getClassHashAt(stealthAddress.address)
       .then(() => true)
@@ -180,7 +174,7 @@ export default class StarknetRPC extends RPC {
     });
   }
 
-  private async _PrepareDeploy(curvyAddress: StarknetCurvyAddress, privateKey: HexString) {
+  private async _PrepareDeploy(curvyAddress: CurvyAddress, privateKey: HexString) {
     const starknetAccount = new Account(this.provider, curvyAddress.address, new EthSigner(privateKey));
 
     const hexPubKey = decimalStringToHex(curvyAddress.publicKey, false);
@@ -203,7 +197,7 @@ export default class StarknetRPC extends RPC {
     return { starknetAccount, deployPayload };
   }
 
-  private async _EstimateDeployFee(curvyAddress: StarknetCurvyAddress, privateKey: HexString) {
+  private async _EstimateDeployFee(curvyAddress: CurvyAddress, privateKey: HexString) {
     const { starknetAccount, deployPayload } = await this._PrepareDeploy(curvyAddress, privateKey);
 
     return starknetAccount.estimateAccountDeployFee(deployPayload, {
@@ -227,11 +221,7 @@ export default class StarknetRPC extends RPC {
   }
 
   // TODO: Unused method
-  async EstimateDeployFee(
-    curvyAddress: StarknetCurvyAddress,
-    privateKey: HexString,
-    skipCheck = false,
-  ): Promise<bigint> {
+  async EstimateDeployFee(curvyAddress: CurvyAddress, privateKey: HexString, skipCheck = false): Promise<bigint> {
     if (!skipCheck && (await this._CheckIsStarknetAccountDeployed(curvyAddress)))
       throw new Error(`Starknet account with address: ${curvyAddress.address} already deployed.`);
 
@@ -240,7 +230,7 @@ export default class StarknetRPC extends RPC {
   }
 
   async DeployStarknetAccount(
-    curvyAddress: StarknetCurvyAddress,
+    curvyAddress: CurvyAddress,
     privateKey: HexString,
     skipCheck = false,
     fee?: EstimateFee,
@@ -265,7 +255,7 @@ export default class StarknetRPC extends RPC {
   }
 
   async SendToAddress(
-    curvyAddress: StarknetCurvyAddress,
+    curvyAddress: CurvyAddress,
     privateKey: HexString,
     address: string,
     amount: string,
@@ -302,7 +292,7 @@ export default class StarknetRPC extends RPC {
   }
 
   async EstimateFee(
-    curvyAddress: StarknetCurvyAddress,
+    curvyAddress: CurvyAddress,
     privateKey: HexString,
     address: Address,
     amount: string,

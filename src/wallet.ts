@@ -1,14 +1,29 @@
-import type { CurvyAddress } from "@/curvy-address/interface";
 import type { CurvyKeyPairs } from "@/types/core";
 
-export class CurvyWallet {
-  readonly #keyPairs: CurvyKeyPairs;
+export type ScanCursors = {
+  latest: number | undefined;
+  oldest: number | undefined;
+};
+
+interface CurvyWalletData {
+  readonly id: string;
+  readonly createdAt: number;
+  readonly ownerAddress: string;
+  readonly curvyHandle: string;
+  scanCursors: ScanCursors;
+}
+
+class CurvyWallet {
+  readonly id: string;
+  readonly createdAt: number;
   readonly ownerAddress: string;
   readonly curvyHandle: string;
 
-  stealthAddresses: CurvyAddress[] = [];
+  readonly #keyPairs: CurvyKeyPairs;
 
-  constructor(curvyHandle: string, ownerAddress: string, keyPairs: CurvyKeyPairs) {
+  constructor(id: string, createdAt: number, curvyHandle: string, ownerAddress: string, keyPairs: CurvyKeyPairs) {
+    this.id = id;
+    this.createdAt = createdAt;
     this.curvyHandle = curvyHandle;
     this.ownerAddress = ownerAddress;
     this.#keyPairs = keyPairs;
@@ -18,7 +33,14 @@ export class CurvyWallet {
     return this.#keyPairs;
   }
 
-  addStealthAddress(stealthAddress: CurvyAddress) {
-    this.stealthAddresses.push(stealthAddress);
+  serialize() {
+    return {
+      id: this.id,
+      createdAt: this.createdAt,
+      ownerAddress: this.ownerAddress,
+      curvyHandle: this.curvyHandle,
+    };
   }
 }
+
+export { CurvyWallet, type CurvyWalletData };

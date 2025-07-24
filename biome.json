@@ -7,7 +7,9 @@
         "noUnusedImports": "error"
       },
       "style": {
-        "useExportType": "off"
+        "useExportType": "warn",
+        "noNonNullAssertion": "info",
+        "useNodejsImportProtocol": "info"
       }
     }
   },

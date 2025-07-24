@@ -1,4 +1,6 @@
+import type { CurvyAddress } from "@/curvy-address/interface";
 import type { RawAnnoucement } from "@/types/api";
+import type { CurvyWallet, CurvyWalletData, ScanCursors } from "@/wallet";
 
 export type AnnouncementQuery = {
   startTime?: Date;
@@ -15,40 +17,23 @@ export type AnnouncementQueryResult = {
   latestTimestamp?: Date;
 };
 
-export interface AnnouncementStorageInterface {
-  /**
-   * Writes a single announcement to storage.
-   * @throws {StorageError} If the announcement is invalid or write fails
-   */
-  WriteAnnouncement(announcement: RawAnnoucement): Promise<void>;
+export interface StorageInterface {
+  storeCurvyAddress(announcement: RawAnnoucement): Promise<void>;
+  storeManyCurvyAddresses(announcements: RawAnnoucement[]): Promise<void>;
 
-  /**
-   * Writes multiple announcements to storage in a batch.
-   * @throws {StorageError} If any announcement is invalid or write fails
-   */
-  WriteManyAnnouncements(announcements: RawAnnoucement[]): Promise<void>;
+  updateCurvyAddress(id: string, changes: Partial<CurvyAddress>): Promise<void>;
+  updateManyCurvyAddresses(updates: Array<{ id: string; changes: Partial<CurvyAddress> }>): Promise<void>;
 
-  /**
-   * Retrieves announcements based on query parameters.
-   * @throws {StorageError} If the query fails
-   */
-  GetAnnouncements(query?: AnnouncementQuery): Promise<AnnouncementQueryResult>;
+  getCurvyAddressById(id: string): Promise<CurvyAddress>;
+  getCurvyAddressByIdAndWalletId(addressId: string, walletId: string): Promise<CurvyAddress>;
+  getCurvyAddressesByWalletId(walletId: string): Promise<CurvyAddress[]>;
+  getAllCurvyAddresses(): Promise<CurvyAddress[]>;
 
-  // TODO: Since there are false positives, whenever we find an address
-  //   holding funds for a specific announcement we should mark it and skip scanning for new wallets.
-  //   This should probably be an index in the AnnouncementStorage.
+  storeCurvyWallet(wallet: CurvyWallet): Promise<void>;
+  updateCurvyWalletData(walletId: string, changes: Partial<CurvyWalletData>): Promise<void>;
+  getCurvyWalletDataById(id: string): Promise<CurvyWalletData>;
 
-  /**
-   * Gets the timestamp of the earliest announcement in storage.
-   * @returns {Promise<Date>} The timestamp or 1970-01-01 if storage is empty
-   * @throws {StorageError} If the query fails
-   */
-  GetEarliestTimestamp(): Promise<Date | undefined>;
-
-  /**
-   * Gets the timestamp of the latest announcement in storage.
-   * @returns {Promise<Date>} The timestamp or 1970-01-01 if storage is empty
-   * @throws {StorageError} If the query fails
-   */
-  GetLatestTimestamp(): Promise<Date | undefined>;
+  getLatestScanCursor(walletId: string): Promise<number | undefined>;
+  getOldestScanCursor(walletId: string): Promise<number | undefined>;
+  getScanCursors(walletId: string): Promise<ScanCursors>;
 }

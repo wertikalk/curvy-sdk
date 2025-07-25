@@ -1,5 +1,5 @@
-import { HttpClient } from "@/client/http";
-import type { IAPIClient } from "@/client/interface";
+import { HttpClient } from "@/http/index";
+import type { IApiClient } from "@/interfaces/api";
 import type {
   CreateAnnouncementRequestBody,
   CreateAnnouncementReturnType,
@@ -13,9 +13,9 @@ import type {
   UpdateAnnouncementEncryptedMessageRequestBody,
   UpdateAnnouncementEncryptedMessageReturnType,
 } from "@/types/api";
-import { toSlug } from "@/utils/slug";
+import { toSlug } from "@/utils/helpers";
 
-export class APIClient extends HttpClient implements IAPIClient {
+class ApiClient extends HttpClient implements IApiClient {
   updateBearerToken = (bearer: string) => {
     return this._updateBearerToken(bearer);
   };
@@ -134,3 +134,5 @@ export class APIClient extends HttpClient implements IAPIClient {
     },
   };
 }
+
+export { ApiClient };

@@ -1,27 +1,30 @@
-import type { IAPIClient } from "@/client/interface";
 import type { Core } from "@/core";
-import type { CurvyAddress } from "@/curvy-address/interface";
 import type { CurvyEventEmitter } from "@/events";
+import type { CurvyAddress } from "@/interfaces/address";
+import type { IAddressScanner } from "@/interfaces/address-scanner";
+import type { IApiClient } from "@/interfaces/api";
 import type { StorageInterface } from "@/storage/interface";
 import type { RawAnnoucement } from "@/types/api";
-import { deriveAddress } from "@/utils/deriveAddress";
+import { deriveAddress } from "@/utils/address";
 import type { CurvyWallet } from "@/wallet";
 import dayjs from "dayjs";
 
 const SYNC_BATCH_SIZE = 200;
 
-class AddressScanner {
-  private storage: StorageInterface;
-  private client: IAPIClient;
-  private core: Core;
-  private emitter: CurvyEventEmitter;
-  private isSyncing: boolean;
+class AddressScanner implements IAddressScanner {
+  #storage: StorageInterface;
+  #client: IApiClient;
+  #core: Core;
+  #emitter: CurvyEventEmitter;
 
-  constructor(storage: StorageInterface, core: Core, client: IAPIClient, emitter: CurvyEventEmitter) {
-    this.storage = storage;
-    this.core = core;
-    this.client = client;
-    this.emitter = emitter;
+  isSyncing: boolean;
+
+  constructor(storage: StorageInterface, core: Core, client: IApiClient, emitter: CurvyEventEmitter) {
+    this.#storage = storage;
+    this.#core = core;
+    this.#client = client;
+    this.#emitter = emitter;
+
     this.isSyncing = false;
   }
 
@@ -29,7 +32,7 @@ class AddressScanner {
     let matched = 0;
 
     const keyPairs = wallet.keyPairs;
-    const { spendingPubKeys } = this.core.scan(keyPairs.s, keyPairs.v, announcements);
+    const { spendingPubKeys } = this.#core.scan(keyPairs.s, keyPairs.v, announcements);
 
     const addresses = spendingPubKeys
       .map((publicKey, index) => {
@@ -42,11 +45,11 @@ class AddressScanner {
       })
       .filter(Boolean);
 
-    await this.storage.storeManyCurvyAddresses(addresses);
+    await this.#storage.storeManyCurvyAddresses(addresses);
 
     matched++;
 
-    this.emitter.emitScanProgress({
+    this.#emitter.emitScanProgress({
       scanned: matched,
       wallet,
       total: announcements.length,
@@ -63,14 +66,14 @@ class AddressScanner {
       const {
         scanCursors: { oldest, latest },
         oldestCutoff,
-      } = await this.storage.getScanInfo(wallet.id);
+      } = await this.#storage.getScanInfo(wallet.id);
 
       // If syncing recent announcements, we use the latest cursor to get announcements forwards
       const startTime = latest;
       // If syncing recent announcements, we don't set endTime
       const endTime = undefined;
 
-      const { announcements, total: respTotal } = await this.client.announcement.GetAnnouncements(
+      const { announcements, total: respTotal } = await this.#client.announcement.GetAnnouncements(
         startTime,
         endTime,
         SYNC_BATCH_SIZE,
@@ -81,38 +84,37 @@ class AddressScanner {
         break;
       }
 
+      if (syncJustStarted) {
+        total = respTotal;
+        this.#emitter.emitSyncStarted({
+          total,
+        });
+        syncJustStarted = false;
+      }
+
       const newOldest = Math.max(
         oldestCutoff,
         Math.min(oldest ?? Number.POSITIVE_INFINITY, +dayjs(announcements.at(-1)?.createdAt)),
       );
       const newLatest = Math.max(latest ?? 0, +dayjs(announcements.at(0)?.createdAt));
 
-      await this.storage.updateCurvyWalletData(wallet.id, {
+      await this.#storage.updateCurvyWalletData(wallet.id, {
         scanCursors: { latest: newLatest, oldest: newOldest },
       });
-
-      if (syncJustStarted) {
-        total = respTotal;
-        this.emitter.emitSyncStarted({
-          total,
-        });
-      }
-
-      syncJustStarted = false;
 
       await this.#wasmScan(wallet, announcements);
 
       totalProcessed += announcements.length;
 
       // Emit progress for each batch
-      this.emitter.emitSyncProgress({
+      this.#emitter.emitSyncProgress({
         synced: totalProcessed,
         announcements,
         remaining: total - totalProcessed,
       });
     }
 
-    this.emitter.emitSyncComplete({
+    this.#emitter.emitSyncComplete({
       totalSynced: totalProcessed,
     });
   }
@@ -127,7 +129,7 @@ class AddressScanner {
       const {
         scanCursors: { oldest, latest },
         oldestCutoff,
-      } = await this.storage.getScanInfo(wallet.id);
+      } = await this.#storage.getScanInfo(wallet.id);
 
       const isIncompleteSync = (!latest && !oldest) || (!!oldest && oldest > wallet.createdAt);
 
@@ -139,11 +141,19 @@ class AddressScanner {
       // backwards
       const endTime = oldest;
 
-      const { announcements, total: respTotal } = await this.client.announcement.GetAnnouncements(
+      const { announcements, total: respTotal } = await this.#client.announcement.GetAnnouncements(
         startTime,
         endTime,
         SYNC_BATCH_SIZE,
       );
+
+      if (syncJustStarted) {
+        total = respTotal;
+        this.#emitter.emitSyncStarted({
+          total,
+        });
+        syncJustStarted = false;
+      }
 
       const newOldest = Math.max(
         oldestCutoff,
@@ -151,37 +161,28 @@ class AddressScanner {
       );
       const newLatest = Math.max(latest ?? 0, +dayjs(announcements.at(0)?.createdAt));
 
-      await this.storage.updateCurvyWalletData(wallet.id, {
+      await this.#storage.updateCurvyWalletData(wallet.id, {
         scanCursors: { latest: newLatest, oldest: newOldest },
       });
-
-      if (syncJustStarted) {
-        total = respTotal;
-        this.emitter.emitSyncStarted({
-          total,
-        });
-      }
-
-      syncJustStarted = false;
 
       await this.#wasmScan(wallet, announcements);
 
       totalProcessed += announcements.length;
 
       // Emit progress for each batch
-      this.emitter.emitSyncProgress({
+      this.#emitter.emitSyncProgress({
         synced: totalProcessed,
         announcements,
         remaining: total - totalProcessed,
       });
     }
 
-    this.emitter.emitSyncComplete({
+    this.#emitter.emitSyncComplete({
       totalSynced: totalProcessed,
     });
   }
 
-  async scan(wallets: CurvyWallet[]): Promise<void> {
+  async scan(wallets: CurvyWallet[]) {
     if (this.isSyncing) {
       return;
     }
@@ -192,7 +193,7 @@ class AddressScanner {
       try {
         const {
           scanCursors: { latest, oldest },
-        } = await this.storage.getScanInfo(wallet.id);
+        } = await this.#storage.getScanInfo(wallet.id);
 
         const isInitialSync = !latest && !oldest;
         const isIncompleteSync = isInitialSync || (!!oldest && oldest > wallet.createdAt);
@@ -201,12 +202,12 @@ class AddressScanner {
 
         if (!isIncompleteSync) {
           this.isSyncing = false;
-          continue; // If not incomplete sync, skip to the next wallet
+          continue; // If sync is complete, skip to the next wallet
         }
 
         await this.#scanOld(wallet);
       } catch (error) {
-        this.emitter.emitSyncError({
+        this.#emitter.emitSyncError({
           error: error as Error,
         });
         throw error;

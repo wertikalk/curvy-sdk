@@ -1,13 +1,13 @@
 import type { NETWORK_FLAVOUR } from "@/constants/networks";
-import type { CurvyAddressBalances, EVMCurvyAddress, StarknetCurvyAddress } from "@/curvy-address/interface";
+import type { CurvyAddressBalances, EVMCurvyAddress, StarknetCurvyAddress } from "@/interfaces/address";
 import { type NetworkFilter, filterNetworks } from "@/utils/network";
-import type RPC from "./abstract";
+import type { Rpc } from "./abstract";
 
-export default class MultiRPC {
-  private rpcs: RPC[] = [];
+class MultiRpc {
+  readonly #rpcArray: Rpc[];
 
-  constructor(rpcs: RPC[]) {
-    this.rpcs = rpcs;
+  constructor(rpcs: Rpc[] = []) {
+    this.#rpcArray = rpcs;
   }
 
   public getBalances<SA extends EVMCurvyAddress | StarknetCurvyAddress>(
@@ -21,15 +21,15 @@ export default class MultiRPC {
           : never
     >
   > {
-    const rpcs = this.rpcs.filter((rpc) => rpc.Network().flavour === stealthAddress.networkFlavour);
+    const rpcs = this.#rpcArray.filter((rpc) => rpc.network.flavour === stealthAddress.networkFlavour);
     return Promise.all(rpcs.map((rpc) => rpc.getBalances(stealthAddress))).then((results) => {
       return Object.assign(Object.create(null), ...results);
     });
   }
 
-  public Network(networkFilter: NetworkFilter): RPC {
-    const rpc = this.rpcs.filter((rpc) => {
-      return filterNetworks([rpc.Network()], networkFilter).length;
+  public Network(networkFilter: NetworkFilter): Rpc {
+    const rpc = this.#rpcArray.filter((rpc) => {
+      return filterNetworks([rpc.network], networkFilter).length;
     });
 
     if (rpc.length === 0) {
@@ -43,3 +43,5 @@ export default class MultiRPC {
     return rpc[0];
   }
 }
+
+export { MultiRpc };

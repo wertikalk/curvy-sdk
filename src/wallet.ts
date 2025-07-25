@@ -1,24 +1,8 @@
+import type { ICurvyWallet } from "@/interfaces/wallet";
 import type { CurvyKeyPairs } from "@/types/core";
+import type { SerializedCurvyWallet } from "@/types/wallet";
 
-export type ScanCursors = {
-  latest: number | undefined;
-  oldest: number | undefined;
-};
-
-export type ScanInfo = {
-  scanCursors: ScanCursors;
-  oldestCutoff: number;
-};
-
-interface CurvyWalletData {
-  readonly id: string;
-  readonly createdAt: number;
-  readonly ownerAddress: string;
-  readonly curvyHandle: string;
-  scanCursors: ScanCursors;
-}
-
-class CurvyWallet {
+class CurvyWallet implements ICurvyWallet {
   readonly id: string;
   readonly createdAt: number;
   readonly ownerAddress: string;
@@ -38,7 +22,7 @@ class CurvyWallet {
     return this.#keyPairs;
   }
 
-  serialize() {
+  serialize(): SerializedCurvyWallet {
     return {
       id: this.id,
       createdAt: this.createdAt,
@@ -48,4 +32,4 @@ class CurvyWallet {
   }
 }
 
-export { CurvyWallet, type CurvyWalletData };
+export { CurvyWallet };

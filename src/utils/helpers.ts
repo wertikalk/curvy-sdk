@@ -12,6 +12,10 @@ const networkGroupToSlug = (network: Network) => {
   return `${group}-${network.testnet ? NETWORK_ENVIRONMENT.TESTNET : NETWORK_ENVIRONMENT.MAINNET}`;
 };
 
+function toSlug(str: string) {
+  return str.replace(" ", "-").toLowerCase();
+}
+
 const signJwtNonce = (message: string, spendingPrivateKey: string): string => {
   const signer = new ethers.Wallet(`0x${spendingPrivateKey}`); // Use Wallet instead of SigningKey
   const signature = signer.signingKey.sign(ethers.hashMessage(message));
@@ -29,4 +33,24 @@ const generateWalletId = (s: string, v: string) => {
   return sha256Digest(JSON.stringify({ s, v }), WALLET_ID_LENGTH);
 };
 
-export { isNode, networkGroupToSlug, signJwtNonce, sha256Digest, generateWalletId, textEncoder };
+function arrayBufferToHex(buffer: ArrayBuffer) {
+  return Array.from(new Uint8Array(buffer))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function encode(message: string) {
+  return textEncoder.encode(message);
+}
+
+export {
+  isNode,
+  networkGroupToSlug,
+  signJwtNonce,
+  sha256Digest,
+  generateWalletId,
+  textEncoder,
+  toSlug,
+  arrayBufferToHex,
+  encode,
+};

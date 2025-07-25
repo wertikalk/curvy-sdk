@@ -67,12 +67,18 @@ test("simplest possible test", async () => {
   expect(validV).toBe(true);
   expect(validS).toBe(true);
 
-  const { announcement } = core.send(keyPairs.S, keyPairs.V);
+  const {
+    R: ephemeralPublicKey,
+    viewTag,
+    spendingPubKey: recipientStealthPublicKey,
+  } = core.send(keyPairs.S, keyPairs.V);
 
-  const validR = core.isValidBN254Point(announcement.ephemeralPublicKey as string);
+  const validR = core.isValidBN254Point(ephemeralPublicKey as string);
   expect(validR).toBe(true);
 
-  const scanResult = core.scan(keyPairs.s, keyPairs.v, [mockPopulateAnnouncement(announcement)]);
+  const scanResult = core.scan(keyPairs.s, keyPairs.v, [
+    mockPopulateAnnouncement({ ephemeralPublicKey, viewTag, recipientStealthPublicKey }),
+  ]);
 
   expect(scanResult.spendingPubKeys).lengthOf(1);
   console.log(scanResult);

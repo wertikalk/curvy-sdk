@@ -12,7 +12,7 @@ import type {
   UpdateAnnouncementEncryptedMessageReturnType,
 } from "@/types/api";
 
-export interface IAPIClient {
+interface IApiClient {
   updateBearerToken(newBearerToken: string): void;
 
   announcement: {
@@ -49,3 +49,5 @@ export interface IAPIClient {
     RefreshBearerToken(): Promise<string>;
   };
 }
+
+export type { IApiClient };

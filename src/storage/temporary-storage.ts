@@ -1,7 +1,8 @@
-import type { CurvyAddress, MinifiedCurvyAddress } from "@/curvy-address/interface";
 import { StorageError } from "@/errors";
-import { bytesToDecimalString, decimalStringToBytes } from "@/utils/publicKeyEncoding";
-import type { CurvyWallet, CurvyWalletData } from "@/wallet";
+import type { CurvyAddress, MinifiedCurvyAddress } from "@/interfaces/address";
+import type { CurvyWalletData } from "@/types/wallet";
+import { bytesToDecimalString, decimalStringToBytes } from "@/utils/decimal-conversions";
+import type { CurvyWallet } from "@/wallet";
 import merge from "lodash.merge";
 import type { StorageInterface } from "./interface";
 

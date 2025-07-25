@@ -4,7 +4,7 @@ import { starknetAccountAbi } from "@/contracts/starknet/abi/account";
 import { computeAddress } from "ethers";
 import { CallData, hash, validateAndParseAddress } from "starknet";
 import type { Address } from "viem";
-import { decimalStringToHex } from "./publicKeyEncoding";
+import { decimalStringToHex } from "./decimal-conversions";
 
 export const deriveAddress = (rawPubKey?: string, flavour?: NETWORK_FLAVOUR_VALUES) => {
   if (!rawPubKey || !flavour) {

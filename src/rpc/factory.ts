@@ -1,34 +1,33 @@
+import { NETWORK_FLAVOUR } from "@/constants/networks";
+import { EvmRpc } from "@/rpc/evm";
+import { StarknetRpc } from "@/rpc/starknet";
 import type { Network } from "@/types/api";
-import type RPC from "./abstract";
-import EVMRPC from "./evm";
-import MultiRPC from "./multi";
-import StarknetRPC from "./starknet";
+import type { Rpc } from "./abstract";
+import { MultiRpc } from "./multi";
 
-export async function NewRPC(network: Network): Promise<RPC> {
-  let rpc: RPC;
+export async function newRpc(network: Network) {
+  let rpc: Rpc;
 
   switch (network.flavour) {
-    case "evm":
-      rpc = new EVMRPC(network);
+    case NETWORK_FLAVOUR.EVM:
+      rpc = new EvmRpc(network);
       break;
-    case "starknet":
-      rpc = new StarknetRPC(network);
+    case NETWORK_FLAVOUR.STARKNET:
+      rpc = new StarknetRpc(network);
       break;
     default:
       throw Error("Unknown network flavour");
   }
 
-  rpc.init();
-
   return rpc;
 }
 
-export async function NewMultiRPC(networks: Network[]): Promise<MultiRPC> {
+export async function newMultiRpc(networks: Network[]) {
   const promises = networks.map(async (network) => {
-    return await NewRPC(network);
+    return await newRpc(network);
   });
 
   const rpcs = await Promise.all(promises);
 
-  return new MultiRPC(rpcs);
+  return new MultiRpc(rpcs);
 }

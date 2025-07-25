@@ -1,4 +1,4 @@
-import type { IAPIClient } from "@/client/interface";
+import type { IApiClient } from "@/interfaces/api";
 import type {
   CreateAnnouncementRequestBody,
   CreateAnnouncementReturnType,
@@ -14,7 +14,7 @@ import type {
   UpdateAnnouncementEncryptedMessageReturnType,
 } from "@/types/api";
 
-export class MockAPIClient implements IAPIClient {
+export class MockAPIClient implements IApiClient {
   private announcementLimit = -1; // -1 will indicate there's no limit
   private shouldThrowError = false;
 
@@ -55,9 +55,9 @@ export class MockAPIClient implements IAPIClient {
       throw new Error("Method not implemented.");
     },
     GetAnnouncements: async (
-      startTime: Date | undefined,
-      endTime: Date | undefined,
-      size: number,
+      startTime?: number,
+      endTime?: number,
+      size?: number,
     ): Promise<GetAnnouncementsReturnType> => {
       if (this.shouldThrowError) {
         throw new Error("Mock error");
@@ -80,11 +80,11 @@ export class MockAPIClient implements IAPIClient {
         let endTimeCriteria = true;
 
         if (startTime) {
-          startTimeCriteria = new Date(a.createdAt).getTime() > startTime.getTime();
+          startTimeCriteria = new Date(a.createdAt).getTime() > startTime;
         }
 
         if (endTime) {
-          endTimeCriteria = new Date(a.createdAt).getTime() < endTime.getTime();
+          endTimeCriteria = new Date(a.createdAt).getTime() < endTime;
         }
 
         return startTimeCriteria && endTimeCriteria;
@@ -119,6 +119,7 @@ export class MockAPIClient implements IAPIClient {
           rpcUrl: "http://localhost:8545",
           multiCallContractAddress: "0x0",
           chainId: "1",
+          nativeCurrency: "ETH",
           blockExplorerUrl: "https://etherscan.io",
           currencies: [
             {

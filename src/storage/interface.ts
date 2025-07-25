@@ -1,6 +1,7 @@
-import type { CurvyAddress } from "@/curvy-address/interface";
+import type { CurvyAddress } from "@/interfaces/address";
 import type { RawAnnoucement } from "@/types/api";
-import type { CurvyWallet, CurvyWalletData, ScanInfo } from "@/wallet";
+import type { CurvyWalletData, ScanInfo } from "@/types/wallet";
+import type { CurvyWallet } from "@/wallet";
 
 export type AnnouncementQuery = {
   startTime?: Date;

@@ -15,12 +15,15 @@ export {
   SCAN_ERROR_EVENT,
   SCAN_MATCH_EVENT,
   SYNC_COMPLETE_EVENT,
-  type ScanErrorEvent,
-  type ScanMatchEvent,
-  type ScanCompleteEvent,
-  type ScanProgressEvent,
-  type SyncCompleteEvent,
-  type SyncErrorEvent,
-  type SyncStartedEvent,
-  type SyncProgressEvent,
-} from "../events";
+} from "@/constants/events";
+
+export type {
+  ScanErrorEvent,
+  ScanMatchEvent,
+  ScanCompleteEvent,
+  ScanProgressEvent,
+  SyncCompleteEvent,
+  SyncErrorEvent,
+  SyncStartedEvent,
+  SyncProgressEvent,
+} from "@/types/events";

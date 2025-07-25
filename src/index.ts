@@ -1,22 +1,7 @@
 import { getAddress } from "viem";
 
 import { Buffer } from "buffer";
-import type { NETWORK_FLAVOUR_VALUES } from "@/constants/networks";
-import type { CurvyAddress } from "@/curvy-address/interface";
-import { NewMultiRPC } from "@/rpc/factory";
-import type { StarknetFeeEstimate } from "@/rpc/starknet";
-import type { StorageInterface } from "@/storage/interface";
-import { TemporaryStorage } from "@/storage/temporary-storage";
-import type { Currency, Network } from "@/types/api";
-import { generateWalletId } from "@/utils/helpers";
-import dayjs from "dayjs";
-import { Signature } from "ethers";
-import { APIClient } from "./client/client";
-import { getSignatureParams as evmGetSignatureParams } from "./constants/evm";
-import { getSignatureParams as starknetGetSignatureParams } from "./constants/starknet";
-import { Core } from "./core";
 import {
-  CurvyEventEmitter,
   SCAN_COMPLETE_EVENT,
   SCAN_ERROR_EVENT,
   SCAN_MATCH_EVENT,
@@ -25,16 +10,37 @@ import {
   SYNC_ERROR_EVENT,
   SYNC_PROGRESS_EVENT,
   SYNC_STARTED_EVENT,
-  type ScanCompleteEvent,
-  type ScanErrorEvent,
-  type ScanMatchEvent,
-  type SyncErrorEvent,
-  type SyncProgressEvent,
-  type SyncStartedEvent,
-} from "./events";
-import type MultiRPC from "./rpc/multi";
-import { arrayBufferToHex } from "./utils/arrayBuffer";
-import { deriveAddress } from "./utils/deriveAddress";
+} from "@/constants/events";
+import type {
+  NETWORKS,
+  NETWORK_ENVIRONMENT_VALUES,
+  NETWORK_FLAVOUR_VALUES,
+  SUPPORTED_NETWORKS_VALUES,
+} from "@/constants/networks";
+import { CurvyEventEmitter } from "@/events";
+import { ApiClient } from "@/http/api";
+import type { CurvyAddress } from "@/interfaces/address";
+import { newMultiRpc } from "@/rpc/factory";
+import type { MultiRpc } from "@/rpc/multi";
+import type { StorageInterface } from "@/storage/interface";
+import { TemporaryStorage } from "@/storage/temporary-storage";
+import type { Currency, Network } from "@/types/api";
+import type {
+  ScanCompleteEvent,
+  ScanErrorEvent,
+  ScanMatchEvent,
+  SyncErrorEvent,
+  SyncProgressEvent,
+  SyncStartedEvent,
+} from "@/types/events";
+import type { StarknetFeeEstimate } from "@/types/rpc";
+import { arrayBufferToHex, generateWalletId } from "@/utils/helpers";
+import dayjs from "dayjs";
+import { Signature } from "ethers";
+import { getSignatureParams as evmGetSignatureParams } from "./constants/evm";
+import { getSignatureParams as starknetGetSignatureParams } from "./constants/starknet";
+import { Core } from "./core";
+import { deriveAddress } from "./utils/address";
 import { computePrivateKeys } from "./utils/keyComputation";
 import { type NetworkFilter, filterNetworks } from "./utils/network";
 import { CurvyWallet } from "./wallet";
@@ -43,14 +49,15 @@ import { WalletManager } from "./wallet-manager";
 globalThis.Buffer = Buffer;
 
 class CurvySDK {
-  readonly #client: APIClient;
+  readonly #client: ApiClient;
   readonly #emitter: CurvyEventEmitter;
   readonly #core: Core;
-  #networks: Network[];
+  readonly #walletManager: WalletManager;
 
   readonly storage: StorageInterface;
-  readonly walletManager: WalletManager;
-  RPC: MultiRPC | undefined;
+
+  #networks: Network[];
+  #rpcClient: MultiRpc | undefined;
 
   private constructor(
     apiKey: string,
@@ -59,11 +66,19 @@ class CurvySDK {
     storage: StorageInterface = new TemporaryStorage(),
   ) {
     this.#core = core;
-    this.#client = new APIClient(apiKey, apiBaseUrl);
+    this.#client = new ApiClient(apiKey, apiBaseUrl);
     this.#emitter = new CurvyEventEmitter();
     this.#networks = [];
     this.storage = storage;
-    this.walletManager = new WalletManager(this.#client, this.#emitter, this.storage, this.#core);
+    this.#walletManager = new WalletManager(this.#client, this.#emitter, this.storage, this.#core);
+  }
+
+  get rpcClient(): MultiRpc {
+    if (!this.#rpcClient) {
+      throw new Error("RPC client is not initialized!");
+    }
+
+    return this.#rpcClient;
   }
 
   static async init(
@@ -87,8 +102,12 @@ class CurvySDK {
     return sdk;
   }
 
-  public GetNetworkByNetworkSlug(networkSlug: string): Network | undefined {
-    const [networkGroup, environment] = networkSlug.split("-");
+  public GetNetworkByNetworkSlug(networkSlug: NETWORKS): Network | undefined {
+    const [networkGroup, environment] = networkSlug.split("-") as [
+      SUPPORTED_NETWORKS_VALUES,
+      NETWORK_ENVIRONMENT_VALUES,
+    ];
+
     const networks = this.GetNetworks(
       (network) => network.group.toLowerCase() === networkGroup && (environment === "testnet") === network.testnet,
     );
@@ -101,7 +120,7 @@ class CurvySDK {
   }
 
   public GetWallets(): CurvyWallet[] {
-    return this.walletManager.wallets;
+    return this.#walletManager.wallets;
   }
 
   public GetStealthAddress(id: string): Promise<CurvyAddress | undefined> {
@@ -136,10 +155,10 @@ class CurvySDK {
     const { spendingKey, viewingKey } = recipientDetails.publicKeys[0];
 
     const {
-      announcement: { recipientStealthPublicKey, ephemeralPublicKey, viewTag },
-    } = this.#core.send(spendingKey, viewingKey) as {
-      announcement: { recipientStealthPublicKey: string; ephemeralPublicKey: string; viewTag: string };
-    };
+      spendingPubKey: recipientStealthPublicKey,
+      R: ephemeralPublicKey,
+      viewTag,
+    } = this.#core.send(spendingKey, viewingKey);
 
     const network = this.GetNetwork(networkIdentifier);
 
@@ -173,7 +192,7 @@ class CurvySDK {
       toAddress = await this.GetNewStealthAddressForUser(networkIdentifier, to);
     }
 
-    const wallet = this.walletManager.getWalletById(from.walletId);
+    const wallet = this.#walletManager.getWalletById(from.walletId);
     if (!wallet) {
       throw new Error(`Cannot send from address ${from.id} because it's wallet is not found!`);
     }
@@ -183,7 +202,7 @@ class CurvySDK {
       spendingPrivKeys: [privateKey],
     } = this.#core.scan(s, v, [from]);
 
-    return this.RPC?.Network(networkIdentifier).EstimateFee(from, privateKey, toAddress, amount, currency);
+    return this.rpcClient.Network(networkIdentifier).estimateFee(from, privateKey, toAddress, amount, currency);
   }
 
   public async Send(
@@ -199,7 +218,7 @@ class CurvySDK {
     if (to.endsWith(".staging-curvy.name") || to.endsWith(".curvy.name")) {
       toAddress = await this.GetNewStealthAddressForUser(networkIdentifier, to);
     }
-    const wallet = this.walletManager.getWalletById(from.walletId);
+    const wallet = this.#walletManager.getWalletById(from.walletId);
     if (!wallet) {
       throw new Error(`Cannot send from address ${from.id} because it's wallet is not found!`);
     }
@@ -209,7 +228,7 @@ class CurvySDK {
       spendingPrivKeys: [privateKey],
     } = this.#core.scan(s, v, [from]);
 
-    return this.RPC?.Network(networkIdentifier).SendToAddress(from, privateKey, toAddress, amount, currency, fee);
+    return this.rpcClient.Network(networkIdentifier).sendToAddress(from, privateKey, toAddress, amount, currency, fee);
   }
 
   public async SetActiveNetworks(networkFilter: NetworkFilter) {
@@ -217,7 +236,7 @@ class CurvySDK {
     if (!networks.length) {
       throw new Error(`Network array is empty after filtering with ${networkFilter}`);
     }
-    this.RPC = await NewMultiRPC(networks);
+    this.#rpcClient = await newMultiRpc(networks);
   }
 
   // // GetAnnouncements retrieves announcements from storage based on query parameters
@@ -343,19 +362,19 @@ class CurvySDK {
 
     const wallet = new CurvyWallet(walletId, +dayjs(createdAt), curvyHandle, address, keyPairs);
 
-    await this.walletManager.addWallet(wallet);
+    await this.#walletManager.addWallet(wallet);
 
     return wallet;
   }
 
   public async RefreshBalances() {
-    if (!this.RPC) {
-      throw new Error("RPC not initialized");
+    if (!this.rpcClient) {
+      throw new Error("rpcClient not initialized");
     }
 
     for (const wallet of this.GetWallets()) {
       for (const address of await this.storage.getCurvyAddressesByWalletId(wallet.id)) {
-        await this.storage.updateCurvyAddress(address.id, { balances: await this.RPC.getBalances(address) });
+        await this.storage.updateCurvyAddress(address.id, { balances: await this.rpcClient.getBalances(address) });
       }
     }
   }

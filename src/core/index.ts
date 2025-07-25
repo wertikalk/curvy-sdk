@@ -1,5 +1,6 @@
 import "./wasm-exec.js";
 
+import type { ICore } from "@/interfaces/core";
 import type { RawAnnoucement } from "@/types/api";
 import type {
   CoreLegacyKeyPairs,
@@ -69,7 +70,7 @@ async function loadWasm(wasmUrl?: string): Promise<void> {
   go.run(instance);
 }
 
-class Core {
+class Core implements ICore {
   static async init(wasmUrl?: string): Promise<Core> {
     await loadWasm(wasmUrl);
 
@@ -134,16 +135,8 @@ class Core {
 
   send(S: string, V: string) {
     const input = JSON.stringify({ K: S, V });
-    const result = JSON.parse(curvy.send(input)) as CoreSendReturnType;
 
-    return {
-      announcement: {
-        ephemeralPublicKey: result.R,
-        viewTag: result.viewTag,
-        recipientStealthPublicKey: result.spendingPubKey,
-      },
-      ephemeralPrivateKey: result.r,
-    };
+    return JSON.parse(curvy.send(input)) as CoreSendReturnType;
   }
 
   scan(s: string, v: string, announcements: RawAnnoucement[]) {

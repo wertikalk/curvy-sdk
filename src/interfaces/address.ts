@@ -24,7 +24,6 @@ interface CurvyAddress<T extends NETWORK_FLAVOUR_VALUES = any> extends ScannedAn
   walletId: string;
   balances: CurvyAddressBalances<T>;
 }
-
 interface EVMCurvyAddress extends CurvyAddress<NETWORK_FLAVOUR["EVM"]> {}
 interface StarknetCurvyAddress extends CurvyAddress<NETWORK_FLAVOUR["STARKNET"]> {}
 

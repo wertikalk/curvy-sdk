@@ -1,5 +1,5 @@
 import type { Network } from "@/types/api";
-import { toSlug } from "./slug";
+import { toSlug } from "@/utils/helpers";
 
 // Network filter can be:
 // - string: slug format, e.g. "ethereum-sepolia"

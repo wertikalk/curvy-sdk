@@ -1,4 +1,4 @@
-export class CurvyError extends Error {
+class CurvyError extends Error {
   constructor(
     message: string,
     public code: string,
@@ -8,7 +8,7 @@ export class CurvyError extends Error {
   }
 }
 
-export class AnnouncementSyncError extends CurvyError {
+class AnnouncementSyncError extends CurvyError {
   constructor(
     message: string,
     public originalError?: Error,
@@ -18,7 +18,7 @@ export class AnnouncementSyncError extends CurvyError {
   }
 }
 
-export class StorageError extends CurvyError {
+class StorageError extends CurvyError {
   constructor(
     message: string,
     public originalError?: Error,
@@ -28,7 +28,7 @@ export class StorageError extends CurvyError {
   }
 }
 
-export class APIError extends CurvyError {
+class APIError extends CurvyError {
   constructor(
     message: string,
     public statusCode?: number,
@@ -38,3 +38,5 @@ export class APIError extends CurvyError {
     this.name = "APIError";
   }
 }
+
+export { CurvyError, AnnouncementSyncError, StorageError, APIError };

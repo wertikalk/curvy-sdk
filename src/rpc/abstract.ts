@@ -1,27 +1,24 @@
-import type { CurvyAddress, CurvyAddressBalance, CurvyAddressBalances } from "@/curvy-address/interface";
+import type { CurvyAddress, CurvyAddressBalance, CurvyAddressBalances } from "@/interfaces/address";
 import type { Network } from "@/types/api";
 import type { HexString } from "@/types/helper";
-import type { StarknetFeeEstimate } from "./starknet";
+import type { StarknetFeeEstimate } from "@/types/rpc";
 
-export default abstract class RPC {
-  protected network: Network;
+abstract class Rpc {
+  readonly #network: Network;
 
-  constructor(network: Network) {
-    this.network = network;
-    this.init();
+  protected constructor(network: Network) {
+    this.#network = network;
   }
 
-  public Network(): Network {
-    return this.network;
+  get network(): Network {
+    return this.#network;
   }
-
-  abstract init(): void;
 
   abstract getBalances(stealthAddress: CurvyAddress): Promise<CurvyAddressBalances>;
 
   abstract getBalance(stealthAddress: CurvyAddress, symbol: string): Promise<CurvyAddressBalance>;
 
-  abstract SendToAddress(
+  abstract sendToAddress(
     _curvyAddress: CurvyAddress,
     privateKey: HexString,
     address: string,
@@ -30,7 +27,7 @@ export default abstract class RPC {
     fee?: StarknetFeeEstimate | bigint,
   ): Promise<string>;
 
-  abstract EstimateFee(
+  abstract estimateFee(
     _curvyAddress: CurvyAddress,
     privateKey: HexString,
     address: string,
@@ -38,5 +35,7 @@ export default abstract class RPC {
     currency: string,
   ): Promise<bigint | StarknetFeeEstimate>;
 
-  abstract FeeToAmount(feeEstimate: StarknetFeeEstimate | bigint): bigint;
+  abstract feeToAmount(feeEstimate: StarknetFeeEstimate | bigint): bigint;
 }
+
+export { Rpc };

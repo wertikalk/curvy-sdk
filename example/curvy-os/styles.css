@@ -1,9 +1,3 @@
-.field-row input#fromAddress,
-.field-row input#toAddress,
-.field-row input#stealthAddress {
-    width: 270px;
-}
-
 .field-row {
     display: block !important;
     margin-bottom: 10px !important;
@@ -50,6 +44,12 @@ button {
 
 aside {
     margin-right: 16px;
+    min-width: 250px;
+}
+
+fieldset {
+    width: 90%;
+    margin: 0 auto;
 }
 
 fieldset label {
@@ -57,6 +57,12 @@ fieldset label {
     text-align: right;
     display: inline-block;
 }
+
+/* fieldset button {
+    position: absolute;
+    right: 10px;
+} */
+
 #hideZeroBalancesContainer,
 #addWalletButton,
 #refreshBalancesButton {
@@ -67,8 +73,26 @@ fieldset label {
 #walletsTab {
     display: flex;
 }
+
+#walletsTab main {
+    width: 100%;
+}
+
+#walletsTab main fieldset {
+    width: 95%;
+    margin: 0 auto;
+}
+
+#walletsTab main fieldset button {
+    right: 10px;
+}
+
+#walletsTab main fieldset input {
+    width: 80%;
+}
+
 #window {
-    width: 800px;
+    width: 900px;
     margin: 20px auto;
     position: absolute;
     z-index: 99;
@@ -112,7 +136,7 @@ menu[role="tablist"] > li {
 #curvy-features {
     margin-top: 0px !important;
     margin-bottom: 3px;
-    width: 400px;
+    /* width: 100%; */
 }
 
 #curvy-features > div[role="sub-tab-content"] {

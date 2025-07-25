@@ -1,3 +1,4 @@
+const CSUC_ACTIONS = ["withdraw", "transfer", "deposit-to-aggregator"];
 //////////////////////////////////////////////////////////////////////////////
 //
 // GLOBAL FUNCTIONS - Must be added to the window object
@@ -277,7 +278,7 @@ function populateWalletsTree() {
     if (wallets.length === 0) {
         walletsTree.innerHTML = `<li>
                                 <img src="https://win98icons.alexmeub.com/icons/png/catalog_no-1.png" alt="No Wallets Icon"
-                                     style="width: 12px; height: 12px; margin-right: 4px">
+                                    style="width: 12px; height: 12px; margin-right: 4px">
                                     <i>No wallets registered</i>
                             </li>`;
         return;
@@ -318,7 +319,7 @@ function populateWalletsTree() {
                 balance.className = "balance";
                 balance.setAttribute(
                     "onclick",
-                    "selectStealthAddress.call(this)"
+                    "selectLegacyStealthAddress.call(this)"
                 );
                 balance.dataset.address = stealthAddress.address;
                 balance.dataset.network = network.name;
@@ -362,7 +363,7 @@ function populateWalletsTree() {
 
             const balances = document.createElement("ul");
 
-            for (const balanceIdentifier in stealthAddress.csuc.balances) {
+            for (const balanceIdentifier in stealthAddress.CSUC.balances) {
                 const [network, currency] =
                     window.curvySDK.GetNetworkAndCurrencyFromBalanceIdentifier(
                         balanceIdentifier
@@ -373,14 +374,14 @@ function populateWalletsTree() {
                 balance.className = "balance";
                 balance.setAttribute(
                     "onclick",
-                    "selectStealthAddress.call(this)"
+                    "selectCSUCStealthAddress.call(this)"
                 );
                 balance.dataset.address = stealthAddress.address;
                 balance.dataset.network = network.name;
                 balance.dataset.currency = currency.symbol;
 
                 const formattedBalance = prettyPrintBalance(
-                    stealthAddress.csuc.balances[balanceIdentifier],
+                    stealthAddress.CSUC.balances[balanceIdentifier],
                     currency.decimals
                 );
                 balance.textContent = `${formattedBalance} ${currency.symbol}@${network.name}`;
@@ -390,7 +391,7 @@ function populateWalletsTree() {
 
             if (
                 !hideZeroBalances ||
-                Object.keys(stealthAddress.balances).length > 0
+                Object.keys(stealthAddress.CSUC.balances).length > 0
             ) {
                 ul.appendChild(li);
                 ul.appendChild(balances);
@@ -416,7 +417,7 @@ function populateWalletsTree() {
     ).textContent = `$${totalBalance.toFixed(2)}`;
 }
 
-function selectStealthAddress() {
+function selectLegacyStealthAddress() {
     const selectedBalances = document.querySelectorAll("li.balance.selected");
 
     for (const balance of selectedBalances) {
@@ -440,17 +441,43 @@ function selectStealthAddress() {
     const networkInput = document.getElementById("network");
     networkInput.value = network;
 
-    const csucFromAddressInput = document.getElementById("csuc-fromAddress");
+    const csucFromAddressInput = document.getElementById(
+        "csuc-onboard-fromAddress"
+    );
     csucFromAddressInput.value = address;
 
-    const csucCurrencyInput = document.getElementById("csuc-currency");
+    const csucCurrencyInput = document.getElementById("csuc-onboard-currency");
     csucCurrencyInput.value = currency;
 
-    const csucNetworkInput = document.getElementById("csuc-network");
+    const csucNetworkInput = document.getElementById("csuc-onboard-network");
     csucNetworkInput.value = network;
 }
 
-window.selectStealthAddress = selectStealthAddress;
+window.selectLegacyStealthAddress = selectLegacyStealthAddress;
+
+function selectCSUCStealthAddress() {
+    const selectedBalances = document.querySelectorAll("li.balance.selected");
+
+    for (const balance of selectedBalances) {
+        balance.classList.remove("selected");
+    }
+
+    this.classList.add("selected");
+
+    document.getElementById("estimate-fee").disabled = false;
+
+    const address = this.dataset.address;
+    const network = this.dataset.network;
+    const currency = this.dataset.currency;
+
+    for (const action of CSUC_ACTIONS) {
+        document.getElementById(`csuc-${action}-fromAddress`).value = address;
+        document.getElementById(`csuc-${action}-currency`).value = currency;
+        document.getElementById(`csuc-${action}-network`).value = network;
+    }
+}
+
+window.selectCSUCStealthAddress = selectCSUCStealthAddress;
 
 // TODO: move to SDK
 function prettyPrintBalance(amount, decimals, precision = 2) {
@@ -479,7 +506,6 @@ async function refreshBalances() {
     document.body.style.cursor = "wait";
 
     await window.curvySDK.RefreshBalances();
-    await window.curvySDK.RefreshBalancesCSUC();
 
     populateWalletsTree();
 
@@ -561,31 +587,31 @@ async function send() {
 
 window.send = send;
 
-async function transferIntoCSUC() {
+async function onboardIntoCSUC() {
     // Disable when we start estimating
-    document.getElementById("csuc-transfer").disabled = true;
+    document.getElementById("csuc-onboard-button").disabled = true;
     document.body.style.cursor = "wait";
 
     const stealthAddress = window.curvySDK.GetStealthAddress(
-        document.getElementById("csuc-fromAddress").value
+        document.getElementById("csuc-onboard-fromAddress").value
     );
 
     const utils = await window.curvySDK.Utils();
     console.log("Utils: ", utils);
 
-    const toAddress = document.getElementById("csuc-toAddress").value;
-    let network = document.getElementById("csuc-network").value;
+    const toAddress = document.getElementById("csuc-onboard-toAddress").value;
+    let network = document.getElementById("csuc-onboard-network").value;
     network = network.replace(/\s+/g, "-").toLowerCase();
-    let amount = document.getElementById("csuc-amount").value;
-    amount = utils.EVM.parseDecimals(amount, 18);
-    let currency = document.getElementById("csuc-currency").value;
-    currency = utils.EVM.getTokenAddress(network, currency);
+    let amount = document.getElementById("csuc-onboard-amount").value;
+    amount = utils.EVM.Token.parseDecimals(amount, 18);
+    let currency = document.getElementById("csuc-onboard-currency").value;
+    currency = utils.EVM.Token.getTokenAddress(network, currency);
 
     console.log(
         `Transferring ${amount} ${currency} from ${stealthAddress} to ${toAddress} on ${network}`
     );
 
-    const res = await window.curvySDK.TransferIntoCSUC(
+    await window.curvySDK.TransferIntoCSUC(
         network,
         stealthAddress,
         toAddress,
@@ -593,13 +619,104 @@ async function transferIntoCSUC() {
         amount
     );
 
-    // alert(`Transaction sent! Tx hash: ${res}`);
-
-    document.getElementById("csuc-transfer").disabled = false;
+    document.getElementById("csuc-onboard-button").disabled = false;
     document.body.style.cursor = "auto";
 }
 
-window.transferIntoCSUC = transferIntoCSUC;
+window.onboardIntoCSUC = onboardIntoCSUC;
+
+async function estimateFeeForCSUC(action) {
+    if (CSUC_ACTIONS.indexOf(action) === -1) {
+        allert("Invalid action specified for CSUC fee estimation!");
+        return;
+    }
+
+    const estimateButton = document.getElementById(
+        `csuc-${action}-estimate-fee-button`
+    );
+
+    // Disable when we start estimating
+    estimateButton.disabled = true;
+    document.body.style.cursor = "wait";
+
+    const stealthAddress = window.curvySDK.GetStealthAddress(
+        document.getElementById("csuc-transfer-fromAddress").value
+    );
+
+    const toAddress = document.getElementById(`csuc-${action}-toAddress`).value;
+    const network = document.getElementById(`csuc-${action}-network`).value;
+    const amount = document.getElementById(`csuc-${action}-amount`).value;
+    const currency = document.getElementById(`csuc-${action}-currency`).value;
+
+    const token = window.curvySDK
+        .Utils()
+        .EVM.Token.getTokenAddress("ethereum-sepolia", currency);
+
+    const { payload, offeredTotalFee } =
+        await window.curvySDK.EstimateActionInsideCSUC(
+            "ethereum-sepolia",
+            action,
+            stealthAddress,
+            toAddress,
+            token,
+            amount
+        );
+
+    console.log(
+        `Estimated fee for CSUC ${action}: ${offeredTotalFee} for ${amount} ${currency} from ${stealthAddress} to ${toAddress} on ${network}`
+    );
+
+    // TODO: dont't hardcode decimals
+    const decimals = 18;
+    document.getElementById(`csuc-${action}-fee`).value = prettyPrintBalance(
+        BigInt(offeredTotalFee),
+        decimals,
+        decimals
+    );
+
+    window.pendingActionForCSUC = { payload, offeredTotalFee };
+
+    estimateButton.disabled = false;
+    document.body.style.cursor = "auto";
+}
+
+window.estimateFeeForCSUC = estimateFeeForCSUC;
+window.pendingActionForCSUC = null;
+
+async function executeCSUCAction(action) {
+    if (CSUC_ACTIONS.indexOf(action) === -1) {
+        alert("Invalid action specified for CSUC execution!");
+        return;
+    }
+
+    if (!window.pendingActionForCSUC) {
+        alert("Estimate the fee first!");
+        return;
+    }
+
+    const { payload, offeredTotalFee } = window.pendingActionForCSUC;
+
+    document.getElementById(`csuc-${action}-button`).disabled = true;
+    document.body.style.cursor = "wait";
+
+    const stealthAddress = window.curvySDK.GetStealthAddress(
+        document.getElementById(`csuc-${action}-fromAddress`).value
+    );
+
+    const res = await window.curvySDK.RequestActionInsideCSUC(
+        "ethereum-sepolia",
+        stealthAddress,
+        payload,
+        offeredTotalFee
+    );
+
+    console.log("OS resp: ", res);
+    window.pendingActionForCSUC = null;
+    document.getElementById(`csuc-${action}-button`).disabled = false;
+    document.body.style.cursor = "auto";
+}
+
+window.executeCSUCAction = executeCSUCAction;
 
 async function getNewStealthAddress() {
     document.body.style.cursor = "wait";

@@ -108,11 +108,24 @@
                                 <img src="https://win98icons.alexmeub.com/icons/png/users_key-1.png" alt="Key Icon" style="width: 12px; height: 12px; margin-right: 4px" />
                                 Legacy
                             </li>
-                            <li role="tab" aria-selected="false" data-tab-id="xxx" onclick="showSubTabContent('walletsTab', 'csuc-content')">
+                            <li role="tab" aria-selected="false" data-tab-id="xxx" onclick="showSubTabContent('walletsTab', 'csuc-onboard-content')">
                                 <img src="https://win98icons.alexmeub.com/icons/png/users_key-1.png" alt="Key Icon" style="width: 12px; height: 12px; margin-right: 4px" />
-                                CSUC:Onboarding
+                                CSUC:Onboard
+                            </li>
+                            <li role="tab" aria-selected="false" data-tab-id="xxx" onclick="showSubTabContent('walletsTab', 'csuc-transfer-content')">
+                                <img src="https://win98icons.alexmeub.com/icons/png/users_key-1.png" alt="Key Icon" style="width: 12px; height: 12px; margin-right: 4px" />
+                                CSUC:Transfer
+                            </li>
+                            <li role="tab" aria-selected="false" data-tab-id="xxx" onclick="showSubTabContent('walletsTab', 'csuc-withdraw-content')">
+                                <img src="https://win98icons.alexmeub.com/icons/png/users_key-1.png" alt="Key Icon" style="width: 12px; height: 12px; margin-right: 4px" />
+                                CSUC:Withdraw
+                            </li>
+                            <li role="tab" aria-selected="false" data-tab-id="xxx" onclick="showSubTabContent('walletsTab', 'csuc-deposit-to-aggregator-content')">
+                                <img src="https://win98icons.alexmeub.com/icons/png/users_key-1.png" alt="Key Icon" style="width: 12px; height: 12px; margin-right: 4px" />
+                                CSUC: Aggregator
                             </li>
                         </menu>
+
                         <div id ="send-funds-content" role="sub-tab-content">
                             <div class="field-row">
                                 <label for="fromAddress">From:</label>
@@ -142,33 +155,121 @@
                             <button onClick="send()" id="send" disabled>Send</button>
                         </div>
 
-                        <div id ="csuc-content" role="sub-tab-content">
+                        <div id ="csuc-onboard-content" role="sub-tab-content">
                             <div class="field-row">
                                 <label for="fromAddress">From:</label>
-                                <input id="csuc-fromAddress" disabled type="text" placeholder="Select an address from the list" />
+                                <input id="csuc-onboard-fromAddress" disabled type="text" placeholder="Select an address from the list" />
                             </div>
                             <div class="field-row">
                                 <label for="toAddress">CSUC::To:</label>
-                                <input id="csuc-toAddress" type="text" placeholder="Enter a Curvy handle or address" />
+                                <input id="csuc-onboard-toAddress" type="text" placeholder="Enter a Curvy handle or address" />
                             </div>
                             <div class="field-row">
                                 <label for="amount">Amount:</label>
-                                <input id="csuc-amount" type="text" placeholder="0.01" />
+                                <input id="csuc-onboard-amount" type="text" placeholder="0.01" />
                             </div>
                             <div class="field-row">
                                 <label for="currency">Currency:</label>
-                                <input type="text" id="csuc-currency" disabled />
+                                <input type="text" id="csuc-onboard-currency" disabled />
                             </div>
                             <div class="field-row">
                                 <label for="network">Network:</label>
-                                <input type="text" id="csuc-network" disabled />
+                                <input type="text" id="csuc-onboard-network" disabled />
                             </div>
                             <div class="field-row">
                                 <label for="fee">Fee:</label>
-                                <input type="text" disabled id="csuc-fee" value="-" />
+                                <input type="text" disabled id="csuc-onboard-fee" value="-" />
                             </div>
-                            <button onClick="transferIntoCSUC()" id="csuc-transfer">Transfer</button>
+                            <button onClick="onboardIntoCSUC()" id="csuc-onboard-button">Onboard</button>
                         </div>
+
+                        <div id ="csuc-transfer-content" role="sub-tab-content">
+                            <div class="field-row">
+                                <label for="fromAddress">CSUC::From:</label>
+                                <input id="csuc-transfer-fromAddress" disabled type="text" placeholder="Select an address from the list" />
+                            </div>
+                            <div class="field-row">
+                                <label for="toAddress">CSUC::To:</label>
+                                <input id="csuc-transfer-toAddress" type="text" placeholder="Enter a Curvy handle or address" />
+                            </div>
+                            <div class="field-row">
+                                <label for="amount">Amount:</label>
+                                <input id="csuc-transfer-amount" type="text" placeholder="0.01" />
+                            </div>
+                            <div class="field-row">
+                                <label for="currency">Currency:</label>
+                                <input type="text" id="csuc-transfer-currency" disabled />
+                            </div>
+                            <div class="field-row">
+                                <label for="network">Network:</label>
+                                <input type="text" id="csuc-transfer-network" disabled />
+                            </div>
+                            <div class="field-row">
+                                <label for="fee">Fee:</label>
+                                <input type="text" disabled id="csuc-transfer-fee" value="-" />
+                            </div>
+                            <button onClick="estimateFeeForCSUC('transfer')" id="csuc-transfer-estimate-fee-button">Estimate fees</button>
+                            <button onClick="executeCSUCAction('transfer')" id="csuc-transfer-button">Transfer</button>
+                        </div>
+
+                        <div id ="csuc-withdraw-content" role="sub-tab-content">
+                            <div class="field-row">
+                                <label for="fromAddress">CSUC::From:</label>
+                                <input id="csuc-withdraw-fromAddress" disabled type="text" placeholder="Select an address from the list" />
+                            </div>
+                            <div class="field-row">
+                                <label for="toAddress">CSUC::To:</label>
+                                <input id="csuc-withdraw-toAddress" type="text" placeholder="Enter a Curvy handle or address" />
+                            </div>
+                            <div class="field-row">
+                                <label for="amount">Amount:</label>
+                                <input id="csuc-withdraw-amount" type="text" placeholder="0.01" />
+                            </div>
+                            <div class="field-row">
+                                <label for="currency">Currency:</label>
+                                <input type="text" id="csuc-withdraw-currency" disabled />
+                            </div>
+                            <div class="field-row">
+                                <label for="network">Network:</label>
+                                <input type="text" id="csuc-withdraw-network" disabled />
+                            </div>
+                            <div class="field-row">
+                                <label for="fee">Fee:</label>
+                                <input type="text" disabled id="csuc-withdraw-fee" value="-" />
+                            </div>
+                            <button onClick="estimateFeeForCSUC('withdraw')" id="csuc-withdraw-estimate-fee-button">Estimate fees</button>
+                            <button onClick="executeCSUCAction('withdraw')" id="csuc-withdraw-button">Withdraw</button>
+                        </div>
+
+                        <div id ="csuc-deposit-to-aggregator-content" role="sub-tab-content">
+                            <div class="field-row">
+                                <label for="fromAddress">CSUC::From:</label>
+                                <input id="csuc-deposit-to-aggregator-fromAddress" disabled type="text" placeholder="Select an address from the list" />
+                            </div>
+                            <div class="field-row">
+                                <label for="toAddress">Agg::Owner:</label>
+                                <input id="csuc-deposit-to-aggregator-toAddress" type="text" placeholder="Enter the Aggregator OwnerHash" />
+                            </div>
+                            <div class="field-row">
+                                <label for="amount">Amount:</label>
+                                <input id="csuc-deposit-to-aggregator-amount" type="text" placeholder="0.01" />
+                            </div>
+                            <div class="field-row">
+                                <label for="currency">Currency:</label>
+                                <input type="text" id="csuc-deposit-to-aggregator-currency" disabled />
+                            </div>
+                            <div class="field-row">
+                                <label for="network">Network:</label>
+                                <input type="text" id="csuc-deposit-to-aggregator-network" disabled />
+                            </div>
+                            <div class="field-row">
+                                <label for="fee">Fee:</label>
+                                <input type="text" disabled id="csuc-deposit-to-aggregator-fee" value="-" />
+                            </div>
+                            <button onClick="estimateFeeForCSUC('deposit-to-aggregator')" id="csuc-deposit-to-aggregator-estimate-fee-button">Estimate fees</button>
+                            <button onClick="executeCSUCAction('deposit-to-aggregator')" id="csuc-deposit-to-aggregator-button">Deposit</button>
+                        </div>
+
                     </fieldset>
                     <fieldset>
                         <legend>Resolve Curvy handle to stealth address</legend>

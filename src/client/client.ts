@@ -7,8 +7,6 @@ import type {
     CreateGasSponsorshipRequest,
     CreateGasSponsorshipResponse,
     GetAnnouncementsResponse,
-    GetCSAInfoOnCSUCRequest,
-    GetCSAInfoOnCSUCResponse,
     GetUsernameByOwnerAddressResponse,
     Network,
     ResolveUsernameResponse,
@@ -16,6 +14,7 @@ import type {
 import { decimalStringToBytes } from "../utils/publicKeyEncoding";
 import { toSlug } from "../utils/slug";
 import type { IAPIClient } from "./interface";
+import { APIClient as APIClientForCSUC } from "../features/csuc";
 
 const DEFAULT_TIMEOUT = 5000;
 
@@ -31,6 +30,7 @@ export class APIClient implements IAPIClient {
     private apiKey?: string;
     private bearerToken?: string;
     private readonly apiBaseUrl: string;
+    CSUC: APIClientForCSUC;
 
     constructor(authConfig: AuthConfig, apiBaseUrl?: string) {
         // Ensure at least one authentication method is provided
@@ -49,6 +49,8 @@ export class APIClient implements IAPIClient {
         this.bearerToken = authConfig.bearerToken;
 
         this.apiBaseUrl = apiBaseUrl || "https://api.curvy.box";
+
+        this.CSUC = new APIClientForCSUC(this.request.bind(this));
     }
 
     // Method to update the bearer token (for token refresh scenarios)
@@ -129,12 +131,45 @@ export class APIClient implements IAPIClient {
                 );
             }
 
+            // console.log(
+            //     `API Response for ${method} ${path}:`,
+            //     responseBody,
+            //     `Status: ${response.status}`
+            // );
+
             if (responseBody.data === undefined) {
                 throw new APIError(
                     "Missing data in response",
                     response.status,
                     responseBody
                 );
+            }
+
+            if (Array.isArray(responseBody.data)) {
+                responseBody.data = responseBody.data.map((item) => {
+                    try {
+                        return typeof item === "string"
+                            ? JSON.parse(item)
+                            : item;
+                    } catch {
+                        return item;
+                    }
+                }) as T;
+            } else if (
+                responseBody.data &&
+                typeof responseBody.data === "object"
+            ) {
+                for (const key of Object.keys(responseBody.data)) {
+                    try {
+                        const value = (responseBody.data as any)[key];
+                        (responseBody.data as any)[key] =
+                            typeof value === "string"
+                                ? JSON.parse(value)
+                                : value;
+                    } catch {
+                        // leave as is if parsing fails
+                    }
+                }
             }
 
             return responseBody.data;
@@ -239,17 +274,5 @@ export class APIClient implements IAPIClient {
 
         console.log("sdk: GAS SPONSORSHIP RESPONSE:", response);
         return response;
-    }
-
-    public async GetCSAInfoOnCSUC(req: GetCSAInfoOnCSUCRequest): Promise<any> {
-        const response = (await this.request<GetCSAInfoOnCSUCResponse>({
-            method: "POST",
-            path: "/csuc/csa-info",
-            body: { ...req },
-        })) as any;
-
-        console.log("sdk: GetCSAInfoOnCSUC RESPONSE:", response);
-        console.log("sdk: GetCSAInfoOnCSUC  type:", typeof response);
-        return JSON.parse(response);
     }
 }

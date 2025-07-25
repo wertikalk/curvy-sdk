@@ -5,7 +5,8 @@ export { filterNetworks, type NetworkFilter } from "../utils/network";
 
 export * from "../types";
 export * from "../errors";
-export * from "../utils/tokenHandling";
+
+export * from "../features";
 
 export {
     SYNC_STARTED_EVENT,

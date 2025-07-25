@@ -6,9 +6,9 @@ import type {
     ResolveUsernameResponse,
     GasSponsorship,
     CreateGasSponsorshipRequest,
-    GetCSAInfoOnCSUCRequest,
-    // GetCSAInfoOnCSUCResponse,
 } from "../types";
+
+import { IAPIClient as IAPIClientForCSUC } from "../features/csuc";
 
 export interface IAPIClient {
     GetAnnouncements(
@@ -29,5 +29,5 @@ export interface IAPIClient {
         req: CreateGasSponsorshipRequest
     ): Promise<GasSponsorship.ActionStatus>;
 
-    GetCSAInfoOnCSUC(req: GetCSAInfoOnCSUCRequest): Promise<any>;
+    CSUC: IAPIClientForCSUC;
 }

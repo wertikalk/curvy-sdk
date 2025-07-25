@@ -27,34 +27,6 @@ export default class MultiRPC {
         return rpc?.GetBalances(stealthAddress) || Promise.resolve({});
     }
 
-    // public GetBalanceCSUC(
-    //     stealthAddress: CurvyStealthAddress
-    //     token: Address
-    // ): Promise<bigint> {
-    //     const {networkId} = stealthAddress;
-    //     if(networkId !== 1) {
-    //         throw new Error(
-    //             `GetBalanceCSUC is only supported on sepolia (network ID 1), but stealth address has network ID ${networkId}`
-    //         );
-    //     }
-    //     const rpc = this.rpcs.find(
-    //         (rpc) => rpc.Network().id === networkId
-    //     );
-
-    //     if (!rpc) {
-    //         if (stealthAddress.networkId === -1)
-    //             throw new Error(
-    //                 `There is no adequate RPC for stealth address with network ID ${stealthAddress.networkId}`
-    //             );
-    //     }
-
-    //     return (rpc as EVMRPC).GetBalanceCSUC(stealthAddress, token) || Promise.resolve(0n);
-    // }
-
-    //     return rpc?.GetBalanceCSUC(stealthAddress) || Promise.resolve(0n);
-    // }
-    // )
-
     public Network(networkFilter: NetworkFilter): RPC {
         const rpc = this.rpcs.filter((rpc) => {
             return filterNetworks([rpc.Network()], networkFilter).length;

@@ -43,4 +43,11 @@ export default abstract class RPC {
     abstract CreateReferenceToERC20(token: Address): Promise<any>;
 
     abstract CreateReferenceToCSUC(): Promise<any>;
+
+    abstract PrepareTransferIntoCSUC(
+        from: CurvyStealthAddress,
+        to: `0x${string}`,
+        token: `0x${string}`,
+        amount: bigint
+    ): Promise<any>;
 }

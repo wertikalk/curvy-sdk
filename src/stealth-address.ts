@@ -1,8 +1,8 @@
 import type { Network, NetworkFlavour } from "./types";
 import { deriveAddress } from "./utils/deriveAddress";
 import { toSlug } from "./utils/slug";
-import { CSUC } from "./types";
-import { EVM } from "./utils/tokenHandling";
+
+import { CSUC } from "./features";
 
 export default class CurvyStealthAddress {
     privateKey: string;
@@ -14,11 +14,8 @@ export default class CurvyStealthAddress {
     // balances are mapped to specific currency names
     balances: Record<string, bigint>;
 
-    // CSUC balances and nonces (each token has its own nonce)
-    csuc: {
-        balances: Record<string, bigint>;
-        nonces: Record<string, bigint>;
-    };
+    // Feature: CSUC
+    CSUC = new CSUC();
 
     public constructor(
         privateKey: string,
@@ -36,10 +33,7 @@ export default class CurvyStealthAddress {
         this.privateKey = privateKey || "";
         this.publicKey = publicKey || "";
         this.balances = {};
-        this.csuc = {
-            balances: {},
-            nonces: {},
-        };
+
         this.networkId = networkId || -1;
         this.flavour = flavour;
         this.address = deriveAddress(this.publicKey, flavour);
@@ -62,40 +56,13 @@ export default class CurvyStealthAddress {
         balances: Record<string, bigint>
     ): void {
         for (const currency in balances) {
-            console.log(
-                `Setting balance for ${currency} on network ${network.name}:`,
-                balances[currency]
-            );
+            // console.log(
+            //     `Setting balance for ${currency} on network ${network.name}:`,
+            //     balances[currency]
+            // );
 
             this.balances[`${toSlug(network.name)}:${currency}`] =
                 balances[currency];
-        }
-    }
-
-    public SetInfoCSUC(
-        network: Network,
-        balances: CSUC.Balance[],
-        nonces: CSUC.Nonce[]
-    ): void {
-        for (const [idx, balance] of balances.entries()) {
-            const amount = BigInt(balance.amount);
-            if (amount === 0n) continue;
-
-            const tokenSymbol = EVM.getTokenSymbol(
-                toSlug(network.name),
-                balance.token
-            );
-            console.log(
-                `Setting CSUC balance for ${balance.token} on network ${network.name}:`,
-                balance.amount,
-                `tokenSymbol: ${tokenSymbol}`
-            );
-            this.csuc.balances[`${toSlug(network.name)}:${tokenSymbol}`] =
-                amount;
-
-            this.csuc.nonces[`${toSlug(network.name)}:${tokenSymbol}`] = BigInt(
-                nonces[idx].value
-            );
         }
     }
 }

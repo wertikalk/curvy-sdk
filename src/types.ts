@@ -135,37 +135,3 @@ export namespace GasSponsorship {
         csucWrappedTxBlockHash?: string | null;
     };
 }
-
-// --------------------------------- CSUC
-
-export type GetCSAInfoOnCSUCRequest = {
-    network: CSUC.SupportedNetwork;
-    csas: string[];
-};
-
-export type GetCSAInfoOnCSUCResponse = {
-    csaInfo: CSUC.CSAInfo[];
-};
-
-export namespace CSUC {
-    export enum SupportedNetwork {
-        ETHEREUM_SEPOLIA = "ethereum-sepolia",
-    }
-
-    export type CSAInfo = {
-        network: SupportedNetwork;
-        address: string;
-        balances: Balance[];
-        nonce: Nonce[];
-    };
-
-    export type Balance = {
-        token: string;
-        amount: string;
-    };
-
-    export type Nonce = {
-        token: string;
-        value: string;
-    };
-}

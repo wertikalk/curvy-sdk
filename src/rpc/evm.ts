@@ -291,14 +291,14 @@ export default class EVMRPC extends RPC {
         });
     }
 
-    async GetBalanceCSUC(
-        stealthAddress: CurvyStealthAddress,
-        token: Address
-    ): Promise<Record<string, bigint>> {
-        const balances = await this.GetBalances(stealthAddress);
-        stealthAddress.SetBalances(this.network, balances);
-        return stealthAddress.balances;
-    }
+    // async GetBalanceCSUC(
+    //     stealthAddress: CurvyStealthAddress,
+    //     token: Address
+    // ): Promise<Record<string, bigint>> {
+    //     const balances = await this.GetBalances(stealthAddress);
+    //     stealthAddress.SetBalances(this.network, balances);
+    //     return stealthAddress.balances;
+    // }
 
     async PrepareTransferIntoCSUC(
         from: CurvyStealthAddress,
@@ -360,10 +360,7 @@ export default class EVMRPC extends RPC {
                 });
 
             const sTx = await walletClient.signTransaction(pTx as any);
-
             const dTx = parseTransaction(sTx);
-            console.log("Decoded signed transaction:", dTx);
-            console.log("Decoded signed `s`:", dTx.s);
 
             payloads.push(pTx);
             signedPayloads.push(sTx);

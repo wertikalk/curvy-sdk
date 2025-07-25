@@ -56,11 +56,6 @@ export default class CurvyStealthAddress {
         balances: Record<string, bigint>
     ): void {
         for (const currency in balances) {
-            // console.log(
-            //     `Setting balance for ${currency} on network ${network.name}:`,
-            //     balances[currency]
-            // );
-
             this.balances[`${toSlug(network.name)}:${currency}`] =
                 balances[currency];
         }

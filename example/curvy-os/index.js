@@ -340,12 +340,6 @@ function populateWalletsTree() {
             ) {
                 ul.appendChild(li);
                 ul.appendChild(balances);
-                console.log(
-                    "Stealth Address:",
-                    stealthAddress.address,
-                    "Private Key:",
-                    stealthAddress.privateKey
-                );
             }
         }
         details.appendChild(ul);
@@ -395,13 +389,6 @@ function populateWalletsTree() {
             ) {
                 ul.appendChild(li);
                 ul.appendChild(balances);
-                console.log(
-                    "CSUC::::",
-                    "Stealth Address:",
-                    stealthAddress.address,
-                    "Private Key:",
-                    stealthAddress.privateKey
-                );
             }
         }
 
@@ -587,7 +574,7 @@ async function send() {
 
 window.send = send;
 
-async function onboardIntoCSUC() {
+async function onboardToCSUC() {
     // Disable when we start estimating
     document.getElementById("csuc-onboard-button").disabled = true;
     document.body.style.cursor = "wait";
@@ -597,33 +584,29 @@ async function onboardIntoCSUC() {
     );
 
     const utils = await window.curvySDK.Utils();
-    console.log("Utils: ", utils);
 
     const toAddress = document.getElementById("csuc-onboard-toAddress").value;
     let network = document.getElementById("csuc-onboard-network").value;
     network = network.replace(/\s+/g, "-").toLowerCase();
     let amount = document.getElementById("csuc-onboard-amount").value;
-    amount = utils.EVM.Token.parseDecimals(amount, 18);
     let currency = document.getElementById("csuc-onboard-currency").value;
-    currency = utils.EVM.Token.getTokenAddress(network, currency);
+    currency = utils.CSUC.EVM.Token.getTokenAddress(network, currency);
 
     console.log(
-        `Transferring ${amount} ${currency} from ${stealthAddress} to ${toAddress} on ${network}`
-    );
-
-    await window.curvySDK.TransferIntoCSUC(
-        network,
-        stealthAddress,
-        toAddress,
-        currency,
-        amount
+        "Gas Sponsorship Response:",
+        await window.curvySDK.OnboardToCSUC(
+            stealthAddress,
+            toAddress,
+            currency,
+            amount
+        )
     );
 
     document.getElementById("csuc-onboard-button").disabled = false;
     document.body.style.cursor = "auto";
 }
 
-window.onboardIntoCSUC = onboardIntoCSUC;
+window.onboardToCSUC = onboardToCSUC;
 
 async function estimateFeeForCSUC(action) {
     if (CSUC_ACTIONS.indexOf(action) === -1) {
@@ -650,7 +633,7 @@ async function estimateFeeForCSUC(action) {
 
     const token = window.curvySDK
         .Utils()
-        .EVM.Token.getTokenAddress("ethereum-sepolia", currency);
+        .CSUC.EVM.Token.getTokenAddress("ethereum-sepolia", currency);
 
     const { payload, offeredTotalFee } =
         await window.curvySDK.EstimateActionInsideCSUC(
@@ -661,10 +644,6 @@ async function estimateFeeForCSUC(action) {
             token,
             amount
         );
-
-    console.log(
-        `Estimated fee for CSUC ${action}: ${offeredTotalFee} for ${amount} ${currency} from ${stealthAddress} to ${toAddress} on ${network}`
-    );
 
     // TODO: dont't hardcode decimals
     const decimals = 18;
@@ -710,7 +689,6 @@ async function executeCSUCAction(action) {
         offeredTotalFee
     );
 
-    console.log("OS resp: ", res);
     window.pendingActionForCSUC = null;
     document.getElementById(`csuc-${action}-button`).disabled = false;
     document.body.style.cursor = "auto";
@@ -772,9 +750,6 @@ window.curvySDK = await init(
     apiBaseUrl,
     selectedNetworkFilter
 );
-
-console.log("CURVY-OS SDK initialized", window.curvySDK);
-console.log("Utils: ", await window.curvySDK.Utils());
 
 // Get networks from the SDK
 const networks = await window.curvySDK.GetNetworks();

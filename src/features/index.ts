@@ -1,6 +1,6 @@
 import { Types, Utils } from "./csuc";
 import { Network } from "../types";
-import { toSlug } from "../utils";
+import { toSlug } from ".././utils";
 
 export class CSUC {
     balances: Record<string, bigint> = {};
@@ -19,13 +19,8 @@ export class CSUC {
                 toSlug(network.name) as Types.SupportedNetwork,
                 balance.token
             );
-            // console.log(
-            //     `Setting CSUC balance for ${balance.token} on network ${network.name}:`,
-            //     balance.amount,
-            //     `tokenSymbol: ${tokenSymbol}`
-            // );
-            this.balances[`${toSlug(network.name)}:${tokenSymbol}`] = amount;
 
+            this.balances[`${toSlug(network.name)}:${tokenSymbol}`] = amount;
             this.nonces[`${toSlug(network.name)}:${tokenSymbol}`] = BigInt(
                 nonces[idx].value
             );

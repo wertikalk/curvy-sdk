@@ -16,8 +16,6 @@ export class APIClient implements IAPIClient {
                 body: { ...req },
             })) as any;
 
-        // console.log("sdk: GetCSAInfoOnCSUC RESPONSE:", response);
-        // console.log("sdk: GetCSAInfoOnCSUC  type:", typeof response);
         return response;
     }
 
@@ -35,9 +33,6 @@ export class APIClient implements IAPIClient {
                 }
             )) as any;
 
-        // console.log("sdk: EstimateActionInsideCSUC RESPONSE:", response);
-        // console.log("sdk: EstimateActionInsideCSUC  type:", typeof response);
-
         return response;
     }
     public async SubmitActionRequest(
@@ -51,15 +46,6 @@ export class APIClient implements IAPIClient {
                     ...req,
                 },
             })) as any;
-
-        // console.log(
-        //     "sdk: SubmitRequestForActionInsideCSUC RESPONSE:",
-        //     response
-        // );
-        // console.log(
-        //     "sdk: SubmitRequestForActionInsideCSUC  type:",
-        //     typeof response
-        // );
 
         return response;
     }

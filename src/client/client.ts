@@ -4,8 +4,6 @@ import type {
     AuthConfig,
     CreateAnnouncementParams,
     CreateAnnouncementResponse,
-    CreateGasSponsorshipRequest,
-    CreateGasSponsorshipResponse,
     GetAnnouncementsResponse,
     GetUsernameByOwnerAddressResponse,
     Network,
@@ -15,6 +13,7 @@ import { decimalStringToBytes } from "../utils/publicKeyEncoding";
 import { toSlug } from "../utils/slug";
 import type { IAPIClient } from "./interface";
 import { APIClient as APIClientForCSUC } from "../features/csuc";
+import { APIClient as APIClientForGasSponsorship } from "../features/gas-sponsorship";
 
 const DEFAULT_TIMEOUT = 5000;
 
@@ -31,6 +30,7 @@ export class APIClient implements IAPIClient {
     private bearerToken?: string;
     private readonly apiBaseUrl: string;
     CSUC: APIClientForCSUC;
+    GasSponsorship: APIClientForGasSponsorship;
 
     constructor(authConfig: AuthConfig, apiBaseUrl?: string) {
         // Ensure at least one authentication method is provided
@@ -51,6 +51,9 @@ export class APIClient implements IAPIClient {
         this.apiBaseUrl = apiBaseUrl || "https://api.curvy.box";
 
         this.CSUC = new APIClientForCSUC(this.request.bind(this));
+        this.GasSponsorship = new APIClientForGasSponsorship(
+            this.request.bind(this)
+        );
     }
 
     // Method to update the bearer token (for token refresh scenarios)
@@ -130,12 +133,6 @@ export class APIClient implements IAPIClient {
                     responseBody
                 );
             }
-
-            // console.log(
-            //     `API Response for ${method} ${path}:`,
-            //     responseBody,
-            //     `Status: ${response.status}`
-            // );
 
             if (responseBody.data === undefined) {
                 throw new APIError(
@@ -261,18 +258,5 @@ export class APIClient implements IAPIClient {
         });
 
         return response?.handle;
-    }
-
-    public async SubmitGasSponsorshipRequest(
-        req: CreateGasSponsorshipRequest
-    ): Promise<any> {
-        const response = await this.request<CreateGasSponsorshipResponse>({
-            method: "POST",
-            path: "/gas-sponsorship/submit-action",
-            body: { actions: req.actions },
-        });
-
-        console.log("sdk: GAS SPONSORSHIP RESPONSE:", response);
-        return response;
     }
 }

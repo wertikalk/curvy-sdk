@@ -14,31 +14,27 @@ import {
     parseEther,
     parseUnits,
     Chain,
-    TransactionRequest,
-    // SignTransactionReturnType,
-    parseTransaction,
-    TransactionSerializable,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { sepolia } from "viem/chains";
 import { getBalance, readContract } from "viem/actions";
 import { evmMulticall3Abi } from "../contracts/evm/abi/multicall3";
 import type CurvyStealthAddress from "../stealth-address";
 import RPC from "./abstract";
 import { CSUC } from "../constants/evm";
 import { ARTIFACT as CSUC_ETH_SEPOLIA_ARTIFACT } from "../contracts/evm/curvy-artifacts/ethereum-sepolia/CSUC";
-import { jsonStringify } from "../utils/common";
-import { GasSponsorship } from "../types";
 
 export default class EVMRPC extends RPC {
-    private publicClient!: PublicClient;
-    private walletClient!: WalletClient;
-    private chain!: Chain;
+    public publicClient!: PublicClient;
+    public walletClient!: WalletClient;
+    public chain!: Chain;
+    public rpcUrl!: string;
 
     init() {
         const { name, symbol, decimals } = this.network.currencies.find(
             ({ contract_address }) => contract_address === undefined
         ) || { name: "Ether", symbol: "ETH", decimals: 18 };
+
+        this.rpcUrl = this.network.rpcUrl;
 
         this.chain = defineChain({
             id: Number(this.network.chainId),
@@ -289,92 +285,6 @@ export default class EVMRPC extends RPC {
             abi: erc20Abi,
             client: this.walletClient,
         });
-    }
-
-    // async GetBalanceCSUC(
-    //     stealthAddress: CurvyStealthAddress,
-    //     token: Address
-    // ): Promise<Record<string, bigint>> {
-    //     const balances = await this.GetBalances(stealthAddress);
-    //     stealthAddress.SetBalances(this.network, balances);
-    //     return stealthAddress.balances;
-    // }
-
-    async PrepareTransferIntoCSUC(
-        from: CurvyStealthAddress,
-        to: `0x${string}`,
-        token: `0x${string}`,
-        amount: bigint
-    ): Promise<GasSponsorship.Action> {
-        // Legacy CSA
-        const account = privateKeyToAccount(from.privateKey as `0x${string}`);
-        let nonce = await this.publicClient.getTransactionCount({
-            address: account.address,
-        });
-        const { Main: MainCSUC } = CSUC.DeploymentAddresses[
-            "ethereum-sepolia"
-        ] as any;
-
-        const walletClient = createWalletClient({
-            transport: http(this.network.rpcUrl),
-            chain: sepolia,
-            account,
-        });
-
-        const txInfo = [
-            // ERC20 approve transaction
-            {
-                to: token as Address,
-                data: encodeFunctionData({
-                    abi: erc20Abi,
-                    functionName: "approve",
-                    args: [MainCSUC, amount],
-                }),
-                gas: 70_000n,
-                nonce,
-            },
-            // CSUC wrap transaction
-            {
-                to: MainCSUC as Address,
-                data: encodeFunctionData({
-                    abi: CSUC_ETH_SEPOLIA_ARTIFACT.abi,
-                    functionName: "wrapERC20",
-                    args: [to, token, amount],
-                }),
-                gas: 120_000n,
-                nonce: ++nonce,
-            },
-        ];
-
-        const payloads: TransactionRequest[] = [];
-        const signedPayloads: string[] = [];
-        const decodedSignedPayloads: TransactionSerializable[] = [];
-        for (const txI of txInfo) {
-            const pTx: TransactionRequest =
-                await walletClient.prepareTransactionRequest({
-                    ...txI,
-                    value: 0n,
-                    gasPrice: 1_000_000_000n, // 1 GWei
-                    account,
-                    chain: walletClient.chain,
-                });
-
-            const sTx = await walletClient.signTransaction(pTx as any);
-            const dTx = parseTransaction(sTx);
-
-            payloads.push(pTx);
-            signedPayloads.push(sTx);
-            decodedSignedPayloads.push(dTx);
-        }
-        const action: GasSponsorship.Action = {
-            networkId: 1, // Ethereum Sepolia
-            payloads: payloads.map((p) => ({
-                data: jsonStringify(p),
-            })),
-            signedPayloads,
-        };
-
-        return action;
     }
 
     async CreateReferenceToCSUC(): Promise<any> {

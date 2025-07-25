@@ -1,9 +1,4 @@
-import {
-    Address,
-    getAddress,
-    encodeAbiParameters,
-    EncodeAbiParametersReturnType,
-} from "viem";
+import { Address, getAddress } from "viem";
 
 import { Signature } from "ethers";
 import { APIClient } from "./client/client";
@@ -49,6 +44,8 @@ import { type NetworkFilter, filterNetworks } from "./utils/network";
 import { CurvyWallet } from "./wallet";
 
 import * as CSUC from "./features/csuc";
+import * as GasSponsorship from "./features/gas-sponsorship";
+import EVMRPC from "./rpc/evm";
 
 export class CurvySDK {
     private readonly client: IAPIClient;
@@ -433,24 +430,14 @@ export class CurvySDK {
                 );
                 if (csas.length === 0) continue;
 
-                // console.log(
-                //     `sdk: RefreshBalancesCSUC for ${csas.length} CSUC stealth addresses on network ${supportedNetwork}`,
-                //     { csas }
-                // );
-
-                // TODO: map id -> network
                 const { csaInfo } = await this.client.CSUC.GetCSAInfo({
                     network: CSUC.Types.SupportedNetwork.ETHEREUM_SEPOLIA,
                     csas: csas.map((c) => c.address),
                 });
-                // console.log("sdk: RefreshBalancesCSUC info:", csaInfo);
 
                 for (const [idx, csa] of csas.entries()) {
                     const { network, balances, nonce } = csaInfo[idx] as any;
 
-                    // console.log(
-                    //     `sdk: RefreshBalancesCSUC for CSA ${csa.address} on network ${network} with balances: ${balances} and nonces: ${nonce}`
-                    // );
                     csa.CSUC.SetCSAInfo(
                         this.GetNetwork(network),
                         balances,
@@ -461,114 +448,57 @@ export class CurvySDK {
         }
     }
 
+    public async OnboardToCSUC(
+        from: CurvyStealthAddress,
+        to: Address | string,
+        token: Address | string,
+        amount: bigint | string
+    ): Promise<GasSponsorship.Types.APIClient.Response> {
+        // User creates a request to be onboarded to CSUC
+
+        const parsedAmount = CSUC.Utils.EVM.Token.parseDecimals(amount, 18);
+
+        const sepoliaRPC = this.RPC?.Network(
+            CSUC.Types.SupportedNetwork.ETHEREUM_SEPOLIA
+        ) as EVMRPC;
+
+        const action = await GasSponsorship.Utils.PrepareTransferIntoCSUC(
+            sepoliaRPC,
+            from,
+            to,
+            token,
+            parsedAmount
+        );
+
+        return await this.client.GasSponsorship.SubmitRequest(action);
+    }
+
     public async EstimateActionInsideCSUC(
         network: CSUC.Types.SupportedNetwork,
-        action: CSUC.Types.ActionSet,
+        actionId: CSUC.Types.ActionSet,
         from: CurvyStealthAddress,
         to: Address | string,
         token: Address,
         amount: bigint | string
     ): Promise<CSUC.Types.EstimatedActionCost> {
         // User creates an action payload, and determines the wanted cost/speed
+        amount = CSUC.Utils.EVM.Token.parseDecimals(amount, 18).toString();
 
-        switch (typeof amount) {
-            case "bigint":
-                amount = amount.toString();
-                break;
-            case "string":
-                amount = CSUC.Utils.EVM.Token.parseDecimals(
-                    amount,
-                    18
-                ).toString();
-                break;
-            default:
-                throw new Error("Amount must be a bigint or string");
-        }
-
-        let parameters: EncodeAbiParametersReturnType;
-
-        if (
-            [
-                CSUC.Types.ActionSet.TRANSFER,
-                CSUC.Types.ActionSet.WITHDRAW,
-            ].includes(action)
-        ) {
-            parameters = encodeAbiParameters(
-                [{ name: "recipient", type: "address" }],
-                [to as Address]
+        const payload: CSUC.Types.ActionPayload =
+            await CSUC.Utils.PrepareActionEstimationRequest(
+                network,
+                actionId,
+                from,
+                to,
+                token,
+                amount
             );
-        } else if (action === CSUC.Types.ActionSet.DEPOSIT_TO_AGGREGATOR) {
-            //'tuple(uint256,uint256,uint256)[]'
-            parameters = encodeAbiParameters(
-                [
-                    {
-                        name: "_notes",
-                        type: "tuple[]",
-                        internalType: "struct CurvyAggregator_Types.Note[]",
-                        components: [
-                            {
-                                name: "ownerHash",
-                                type: "uint256",
-                                internalType: "uint256",
-                            },
-                            {
-                                name: "token",
-                                type: "uint256",
-                                internalType: "uint256",
-                            },
-                            {
-                                name: "amount",
-                                type: "uint256",
-                                internalType: "uint256",
-                            },
-                        ],
-                    },
-                ],
-                [
-                    [
-                        {
-                            ownerHash: to as any,
-                            token: BigInt(token),
-                            amount: BigInt(amount),
-                        },
-                    ],
-                ]
-            );
-        } else {
-            throw new Error(
-                `Unsupported action type: ${action}. Supported actions are: ${Object.values(
-                    CSUC.Types.ActionSet
-                ).join(", ")}`
-            );
-        }
-
-        const encodedData = JSON.stringify({
-            token,
-            amount,
-            parameters,
-        });
-        const payload: CSUC.Types.ActionPayload = {
-            network,
-            networkId: 1,
-            from: from.address,
-            actionType: {
-                service: "CSUC",
-                type: action,
-            },
-            encodedData,
-            createdAt: new Date(),
-        };
 
         const response = await this.client.CSUC.EstimateAction({
             payloads: [payload],
         });
 
         const estimatedCost = response.estimatedCosts[0];
-
-        console.log(
-            "sdk: EstimateActionInsideCSUC estimatedCost:",
-            estimatedCost
-        );
 
         return estimatedCost;
     }
@@ -586,15 +516,11 @@ export class CurvySDK {
             totalFee
         );
 
-        console.log("sdk: RequestActionInsideCSUC action:", action);
-
         const response = await this.client.CSUC.SubmitActionRequest({
             actions: [action],
         });
 
         const actionStatus = response.actionStatuses[0];
-
-        console.log("sdk: RequestActionInsideCSUC actionStatus:", actionStatus);
 
         return actionStatus;
     }

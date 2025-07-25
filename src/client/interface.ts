@@ -4,11 +4,10 @@ import type {
     GetAnnouncementsResponse,
     Network,
     ResolveUsernameResponse,
-    GasSponsorship,
-    CreateGasSponsorshipRequest,
 } from "../types";
 
 import { IAPIClient as IAPIClientForCSUC } from "../features/csuc";
+import { IAPIClient as IAPIClientForGasSponsorhip } from "../features/gas-sponsorship";
 
 export interface IAPIClient {
     GetAnnouncements(
@@ -25,9 +24,7 @@ export interface IAPIClient {
     GetCurvyHandleByOwnerAddress(
         ownerAddress: string
     ): Promise<string | undefined>;
-    SubmitGasSponsorshipRequest(
-        req: CreateGasSponsorshipRequest
-    ): Promise<GasSponsorship.ActionStatus>;
 
     CSUC: IAPIClientForCSUC;
+    GasSponsorship: IAPIClientForGasSponsorhip;
 }

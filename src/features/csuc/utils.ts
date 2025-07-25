@@ -1,5 +1,11 @@
 import { ethers } from "ethers";
-import { parseEther, encodeAbiParameters, keccak256 } from "viem";
+import {
+    parseEther,
+    encodeAbiParameters,
+    keccak256,
+    Address,
+    EncodeAbiParametersReturnType,
+} from "viem";
 
 import CurvyStealthAddress from "../../stealth-address";
 
@@ -7,6 +13,89 @@ import { Types } from "./types";
 import { CSUC as Constants } from "../../constants/evm";
 
 export namespace Utils {
+    export const PrepareActionEstimationRequest = async (
+        network: Types.SupportedNetwork,
+        action: Types.ActionSet,
+        from: CurvyStealthAddress,
+        to: Address | string,
+        token: Address,
+        amount: string | bigint
+    ) => {
+        let parameters: EncodeAbiParametersReturnType;
+
+        if (
+            [Types.ActionSet.TRANSFER, Types.ActionSet.WITHDRAW].includes(
+                action
+            )
+        ) {
+            parameters = encodeAbiParameters(
+                [{ name: "recipient", type: "address" }],
+                [to as Address]
+            );
+        } else if (action === Types.ActionSet.DEPOSIT_TO_AGGREGATOR) {
+            parameters = encodeAbiParameters(
+                [
+                    {
+                        name: "_notes",
+                        type: "tuple[]",
+                        internalType: "struct CurvyAggregator_Types.Note[]",
+                        components: [
+                            {
+                                name: "ownerHash",
+                                type: "uint256",
+                                internalType: "uint256",
+                            },
+                            {
+                                name: "token",
+                                type: "uint256",
+                                internalType: "uint256",
+                            },
+                            {
+                                name: "amount",
+                                type: "uint256",
+                                internalType: "uint256",
+                            },
+                        ],
+                    },
+                ],
+                [
+                    [
+                        {
+                            ownerHash: to as any,
+                            token: BigInt(token),
+                            amount: BigInt(amount),
+                        },
+                    ],
+                ]
+            );
+        } else {
+            throw new Error(
+                `Unsupported action type: ${action}. Supported actions are: ${Object.values(
+                    Types.ActionSet
+                ).join(", ")}`
+            );
+        }
+
+        const encodedData = JSON.stringify({
+            token,
+            amount,
+            parameters,
+        });
+        const payload: Types.ActionPayload = {
+            network,
+            networkId: 1,
+            from: from.address,
+            actionType: {
+                service: "CSUC",
+                type: action,
+            },
+            encodedData,
+            createdAt: new Date(),
+        };
+
+        return payload;
+    };
+
     export const PrepareActionRequest = async (
         network: Types.SupportedNetwork,
         from: CurvyStealthAddress,
@@ -15,7 +104,6 @@ export namespace Utils {
     ): Promise<Types.Action> => {
         assertNetworkIsSupported(network);
 
-        // console.log("sdk: csuc sign:::Private key:", from.privateKey);
         const chainId = supportedNetworkToChainId(network);
 
         const { token } = JSON.parse(payload.encodedData);
@@ -25,19 +113,6 @@ export namespace Utils {
         }
         const nonce = from.CSUC.getNonce(network, tokenSymbol);
 
-        // console.log(
-        //     "sdk: RequestActionInsideCSUC with payload:",
-        //     payload,
-        //     "totalFee:",
-        //     totalFee,
-        //     "nonce:",
-        //     nonce,
-        //     "fromPk:",
-        //     from.privateKey
-        // );
-
-        console.log("sdk: RequestActionInsideCSUC with nonce:", nonce);
-
         const signature = await EVM.signActionPayload(
             chainId,
             payload,
@@ -46,15 +121,11 @@ export namespace Utils {
             from.privateKey as any
         );
 
-        // console.log("sdk: RequestActionInsideCSUC signature:", signature);
-
         const action: Types.Action = {
             payload,
             totalFee,
             signature,
         };
-
-        // console.log("sdk: RequestActionInsideCSUC action:", action);
 
         return action;
     };
@@ -162,36 +233,6 @@ export namespace Utils {
                 ],
                 viemValues as any
             );
-
-            // // TODO: remove ethers' version...
-            // const abiCoder = new ethers.AbiCoder();
-            // const values = [
-            //     chainId,
-            //     [
-            //         token,
-            //         actionId,
-            //         amount,
-            //         totalFee,
-            //         10_000_000_000, // TODO: check with contract requirements
-            //         parameters || "0x",
-            //     ],
-            //     nonce,
-            // ];
-            // const ethersEncodedData = abiCoder.encode(
-            //     [
-            //         "uint256",
-            //         // Payload is a struct with the following fields:
-            //         "tuple(address,uint256,uint256,uint256,uint256,bytes)",
-            //         "uint256",
-            //     ],
-            //     values
-            // );
-            // console.log(
-            //     "Encoded data:",
-            //     encodedData,
-            //     "ETHERS:",
-            //     ethersEncodedData
-            // );
 
             const message = keccak256(encodedData);
 

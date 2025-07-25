@@ -1,6 +1,6 @@
 import type { CurvyAddress } from "@/curvy-address/interface";
 import type { RawAnnoucement } from "@/types/api";
-import type { CurvyWallet, CurvyWalletData, ScanCursors } from "@/wallet";
+import type { CurvyWallet, CurvyWalletData, ScanInfo } from "@/wallet";
 
 export type AnnouncementQuery = {
   startTime?: Date;
@@ -35,5 +35,5 @@ export interface StorageInterface {
 
   getLatestScanCursor(walletId: string): Promise<number | undefined>;
   getOldestScanCursor(walletId: string): Promise<number | undefined>;
-  getScanCursors(walletId: string): Promise<ScanCursors>;
+  getScanInfo(walletId: string): Promise<ScanInfo>;
 }

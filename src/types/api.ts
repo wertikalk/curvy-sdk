@@ -25,6 +25,7 @@ type Currency = {
   name: string;
   symbol: string;
   coinmarketcap_id: string;
+  native?: boolean;
   icon_url: string;
   price: number;
   updated_at: string;
@@ -40,6 +41,7 @@ type RawNetwork = {
   slip0044: number;
   flavour: NETWORK_FLAVOUR_VALUES;
   multiCallContractAddress: string;
+  nativeCurrency: string | null;
   chainId: string;
   blockExplorerUrl: string;
 };

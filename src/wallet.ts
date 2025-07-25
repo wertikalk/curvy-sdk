@@ -5,6 +5,11 @@ export type ScanCursors = {
   oldest: number | undefined;
 };
 
+export type ScanInfo = {
+  scanCursors: ScanCursors;
+  oldestCutoff: number;
+};
+
 interface CurvyWalletData {
   readonly id: string;
   readonly createdAt: number;

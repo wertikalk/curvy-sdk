@@ -342,7 +342,7 @@ async function estimateFee() {
   const feeAmount = window.curvySDK.RPC.Network(network).FeeToAmount(fee);
 
   const networkObj = window.curvySDK.GetNetwork(network);
-  const { decimals } = window.curvySDK.GetNativeCurrencyForNetwork(networkObj);
+  const { decimals } = networkObj.currencies.find((c) => c.native);
   document.getElementById("fee").value = prettyPrintBalance(feeAmount, decimals, decimals);
 
   document.getElementById("estimate-fee").disabled = false;
@@ -466,6 +466,7 @@ document.getElementById("sdk-api-key").value = apiKey;
 document.getElementById("sdk-network").value = network;
 
 window.curvySDK.onSyncStarted((event) => {
+  document.getElementById("totalAnnouncements").textContent = 0;
   addEventRow("SYNC_STARTED", JSON.stringify(event));
 });
 

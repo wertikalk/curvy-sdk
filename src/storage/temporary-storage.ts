@@ -139,11 +139,12 @@ export class TemporaryStorage implements StorageInterface {
   }
 
   async updateCurvyWalletData(walletId: string, changes: Partial<CurvyWalletData>) {
-    if (!this.#walletStorage.has(walletId)) {
+    const existingWallet = this.#walletStorage.get(walletId);
+
+    if (!existingWallet) {
       throw new StorageError(`Wallet with ID ${walletId} not found in storage`);
     }
 
-    const existingWallet = this.#walletStorage.get(walletId)!;
     const updatedWallet = merge(existingWallet, changes);
 
     this.#walletStorage.set(walletId, updatedWallet);
@@ -179,13 +180,16 @@ export class TemporaryStorage implements StorageInterface {
     return wallet.scanCursors.oldest;
   }
 
-  async getScanCursors(walletId: string) {
+  async getScanInfo(walletId: string) {
     const wallet = this.#walletStorage.get(walletId);
 
     if (!wallet) {
       throw new StorageError(`Wallet with ID ${walletId} not found`);
     }
 
-    return wallet.scanCursors;
+    return {
+      scanCursors: wallet.scanCursors,
+      oldestCutoff: wallet.createdAt,
+    };
   }
 }

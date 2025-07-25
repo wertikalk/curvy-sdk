@@ -7,6 +7,7 @@ import { signJwtNonce } from "@/utils/helpers";
 import type { CurvyWallet } from "@/wallet";
 
 const JWT_REFRESH_INTERVAL = 14 * (60 * 10 ** 3);
+const SCAN_REFRESH_INTERVAL = 60 * 1000;
 
 export class WalletManager {
   readonly #wallets: Map<string, CurvyWallet>;
@@ -84,7 +85,7 @@ export class WalletManager {
     const walletArray = Array.from(this.#wallets.values());
 
     this.#addressScanner.scan(walletArray).then(() => {
-      this.#scanInterval = setInterval(() => this.#addressScanner.scan(walletArray), 60000);
+      this.#scanInterval = setInterval(() => this.#addressScanner.scan(walletArray), SCAN_REFRESH_INTERVAL);
     });
   }
 

@@ -1,4 +1,4 @@
-import type { AnnouncementBase } from "@/types";
+import type { AnnouncementBase } from "@/types/address";
 import type { RawAnnoucement } from "@/types/api";
 
 let mockIdCounter = 1;

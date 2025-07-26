@@ -1,3 +1,10 @@
+import type { HexString } from "@/types/helper";
+
+type PublicKey = {
+  spendingKey: string;
+  viewingKey: string;
+};
+
 type CoreLegacyKeyPairs = {
   k: string;
   v: string;
@@ -30,7 +37,7 @@ type CoreScanArgs = {
 };
 type CoreScanReturnType = {
   spendingPubKeys: Array<string>;
-  spendingPrivKeys: Array<string>;
+  spendingPrivKeys: Array<HexString>;
 };
 
 type CoreViewerScanArgs = {
@@ -44,6 +51,7 @@ type CoreViewerScanReturnType = {
 };
 
 export type {
+  PublicKey,
   CurvyKeyPairs,
   CurvyPublicKeys,
   CoreLegacyKeyPairs,

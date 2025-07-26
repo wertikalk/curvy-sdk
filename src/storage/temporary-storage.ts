@@ -1,5 +1,5 @@
 import { StorageError } from "@/errors";
-import type { CurvyAddress, MinifiedCurvyAddress } from "@/interfaces/address";
+import type { CurvyAddress, MinifiedCurvyAddress } from "@/types/address";
 import type { CurvyWalletData } from "@/types/wallet";
 import { bytesToDecimalString, decimalStringToBytes } from "@/utils/decimal-conversions";
 import type { CurvyWallet } from "@/wallet";

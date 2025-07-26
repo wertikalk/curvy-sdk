@@ -1,7 +1,8 @@
 import { AddressScanner } from "@/address-scanner";
-import type { Core } from "@/core";
 import type { CurvyEventEmitter } from "@/events";
-import type { ApiClient } from "@/http/api";
+import type { IAddressScanner } from "@/interfaces/address-scanner";
+import type { IApiClient } from "@/interfaces/api";
+import type { ICore } from "@/interfaces/core";
 import type { IWalletManager } from "@/interfaces/wallet-manager";
 import type { StorageInterface } from "@/storage/interface";
 import { signJwtNonce } from "@/utils/helpers";
@@ -12,14 +13,14 @@ const SCAN_REFRESH_INTERVAL = 60 * 10 ** 3;
 
 class WalletManager implements IWalletManager {
   readonly #wallets: Map<string, CurvyWallet>;
-  readonly #apiClient: ApiClient;
-  readonly #addressScanner: AddressScanner;
+  readonly #apiClient: IApiClient;
+  readonly #addressScanner: IAddressScanner;
   readonly #storage: StorageInterface;
 
   #scanInterval: NodeJS.Timeout | null;
   #activeWallet: CurvyWallet | null;
 
-  constructor(client: ApiClient, emitter: CurvyEventEmitter, storage: StorageInterface, core: Core) {
+  constructor(client: IApiClient, emitter: CurvyEventEmitter, storage: StorageInterface, core: ICore) {
     this.#apiClient = client;
     this.#wallets = new Map<string, CurvyWallet>();
     this.#storage = storage;

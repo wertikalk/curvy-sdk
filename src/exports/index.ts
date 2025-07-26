@@ -1,9 +1,9 @@
-export { CurvySDK } from "../index";
+export { CurvySDK } from "../sdk";
 export type { CurvyWallet } from "../wallet";
 
 export { filterNetworks, type NetworkFilter } from "../utils/network";
 
-export * from "../types";
+// export * from "../types";
 export * from "../errors";
 
 export {

@@ -3,8 +3,8 @@ import { CURVY_ACCOUNT_CLASS_HASHES, CURVY_DUMMY_STARKNET_ACCOUNT } from "@/cons
 import { starknetAccountAbi } from "@/contracts/starknet/abi/account";
 import { starknetErc20Abi } from "@/contracts/starknet/abi/erc20";
 import { starknetMulticallAbi } from "@/contracts/starknet/abi/multicall";
-import type { CurvyAddressBalances } from "@/interfaces/address";
-import type { CurvyAddress } from "@/interfaces/address";
+import type { CurvyAddressBalances } from "@/types/address";
+import type { CurvyAddress } from "@/types/address";
 import type { Network } from "@/types/api";
 import type { HexString } from "@/types/helper";
 import type { StarknetFeeEstimate } from "@/types/rpc";

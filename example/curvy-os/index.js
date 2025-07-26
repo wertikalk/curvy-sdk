@@ -75,7 +75,7 @@ function addAnnouncementRow(announcement) {
   createdAtCell.textContent = announcement.createdAt;
 
   const networkCell = newRow.insertCell(2);
-  const network = window.curvySDK.GetNetworks(announcement.network_id);
+  const network = window.curvySDK.getNetworks(announcement.network_id);
   if (network[0]) {
     networkCell.textContent = network[0].name;
   }
@@ -144,15 +144,21 @@ async function signInWithMetamask() {
   const password = await prompt("Please enter password");
 
   // Prompt eth_signTypedData
-  const signingObject = await window.curvySDK.GetSignatureParamsForNetworkFlavour("evm", ownerAddress, password);
-  const params = [ownerAddress, signingObject];
+  const signingObject = await window.curvySDK.getSignatureParamsForNetworkFlavour("evm", ownerAddress, password);
+  const params = [ownerAddress, JSON.stringify(signingObject)];
 
   const rawSignature = await window.ethereum.request({
     method: "eth_signTypedData_v4",
     params,
   });
 
-  await window.curvySDK.AddWalletWithSignature(ownerAddress, rawSignature);
+  console.log(rawSignature);
+
+  await window.curvySDK.addWalletWithSignature("evm", {
+    signatureResult: rawSignature,
+    signatureParams: signingObject,
+    signingAddress: ownerAddress,
+  });
 
   closeAddWalletWindow();
 
@@ -177,13 +183,21 @@ async function signInWithStarknetWallet(walletName) {
 
   const ownerAddress = wallet.account.address;
 
-  const password = await prompt("Please enter password");
+  const pubKey = await wallet.account.signer.getPubKey();
 
-  const signingObject = await window.curvySDK.GetSignatureParamsForNetworkFlavour("starknet", ownerAddress, password);
+  const password = prompt("Please enter password");
+
+  const signingObject = await window.curvySDK.getSignatureParamsForNetworkFlavour("starknet", ownerAddress, password);
 
   const signature = await wallet.account.signMessage(signingObject);
 
-  await window.curvySDK.AddWalletWithSignature(ownerAddress, signature);
+  await window.curvySDK.addWalletWithSignature("starknet", {
+    signatureResult: signature,
+    signingWalletId: walletName,
+    signingPublicKey: pubKey,
+    signingAddress: ownerAddress,
+    signatureParams: signingObject,
+  });
 
   closeAddWalletWindow();
 }
@@ -202,7 +216,7 @@ async function populateWalletsTree() {
 
   walletsTree.innerHTML = "";
 
-  const wallets = window.curvySDK.GetWallets();
+  const wallets = window.curvySDK.wallets;
 
   if (wallets.length === 0) {
     walletsTree.innerHTML = `<li>
@@ -232,11 +246,12 @@ async function populateWalletsTree() {
 
       const a = Object.entries(stealthAddress.balances);
       for (const [networkSlug, tokens] of Object.entries(stealthAddress.balances)) {
-        const network = window.curvySDK.GetNetworkByNetworkSlug(networkSlug);
+        const network = window.curvySDK.getNetworkByNetworkSlug(networkSlug);
         for (const [symbol, { balance, decimals }] of Object.entries(tokens)) {
           const balanceElem = document.createElement("li");
 
           const currency = network.currencies.find((c) => c.symbol === symbol);
+          get;
 
           balanceElem.className = "balance";
           balanceElem.setAttribute("onclick", "selectStealthAddress.call(this)");
@@ -341,7 +356,7 @@ async function estimateFee() {
   window.curvyEstimatedFee = fee;
   const feeAmount = window.curvySDK.RPC.Network(network).FeeToAmount(fee);
 
-  const networkObj = window.curvySDK.GetNetwork(network);
+  const networkObj = window.curvySDK.getNetwork(network);
   const { decimals } = networkObj.currencies.find((c) => c.native);
   document.getElementById("fee").value = prettyPrintBalance(feeAmount, decimals, decimals);
 
@@ -377,7 +392,7 @@ async function send() {
   document.getElementById("estimate-fee").disabled = false;
   document.body.style.cursor = "auto";
 
-  const networkObj = await window.curvySDK.GetNetwork(network);
+  const networkObj = await window.curvySDK.getNetwork(network);
   window.open(`${networkObj.blockExplorerUrl}/tx/${txHash}`, "_blank");
   alert(`Transaction sent! Tx hash: ${txHash}`);
 }
@@ -431,7 +446,7 @@ if (networkToNetworkFilterMapping[network] !== undefined) {
 window.curvySDK = await CurvySDK.init(apiKey, selectedNetworkFilter, apiBaseUrl);
 
 // Get networks from the SDK
-const networks = await window.curvySDK.GetNetworks();
+const networks = window.curvySDK.getNetworks();
 
 // Populate the network dropdown
 const networkSelect = document.getElementById("sdk-network");

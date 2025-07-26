@@ -1,9 +1,9 @@
-import type { Core } from "@/core";
 import type { CurvyEventEmitter } from "@/events";
-import type { CurvyAddress } from "@/interfaces/address";
 import type { IAddressScanner } from "@/interfaces/address-scanner";
 import type { IApiClient } from "@/interfaces/api";
+import type { ICore } from "@/interfaces/core";
 import type { StorageInterface } from "@/storage/interface";
+import type { CurvyAddress } from "@/types/address";
 import type { RawAnnoucement } from "@/types/api";
 import { deriveAddress } from "@/utils/address";
 import type { CurvyWallet } from "@/wallet";
@@ -14,12 +14,12 @@ const SYNC_BATCH_SIZE = 200;
 class AddressScanner implements IAddressScanner {
   #storage: StorageInterface;
   #client: IApiClient;
-  #core: Core;
+  #core: ICore;
   #emitter: CurvyEventEmitter;
 
   isSyncing: boolean;
 
-  constructor(storage: StorageInterface, core: Core, client: IApiClient, emitter: CurvyEventEmitter) {
+  constructor(storage: StorageInterface, core: ICore, client: IApiClient, emitter: CurvyEventEmitter) {
     this.#storage = storage;
     this.#core = core;
     this.#client = client;

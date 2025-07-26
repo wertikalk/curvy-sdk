@@ -1,4 +1,4 @@
-import type { CurvyAddress } from "@/interfaces/address";
+import type { CurvyAddress } from "@/types/address";
 import type { RawAnnoucement } from "@/types/api";
 import type { CurvyWalletData, ScanInfo } from "@/types/wallet";
 import type { CurvyWallet } from "@/wallet";

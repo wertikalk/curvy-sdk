@@ -10,6 +10,7 @@ import type {
   CoreViewerScanArgs,
   CurvyKeyPairs,
 } from "@/types/core";
+import type { HexString } from "@/types/helper";
 import { isNode } from "@/utils/helpers";
 
 declare const Go: {
@@ -146,7 +147,9 @@ class Core implements ICore {
 
     return {
       spendingPubKeys: spendingPubKeys ?? [],
-      spendingPrivKeys: (spendingPrivKeys ?? []).map((pk) => `0x${pk.slice(2).padStart(64, "0")}` as const),
+      spendingPrivKeys: (spendingPrivKeys ?? []).map(
+        (pk) => `0x${pk.slice(2).padStart(64, "0")}` as const satisfies HexString,
+      ),
     };
   }
 

@@ -1,20 +1,20 @@
-import type { NETWORK_FLAVOUR_VALUES } from "@/constants/networks";
+import { NETWORK_FLAVOUR, type NETWORK_FLAVOUR_VALUES } from "@/constants/networks";
 import { CURVY_ACCOUNT_CLASS_HASHES } from "@/constants/starknet";
 import { starknetAccountAbi } from "@/contracts/starknet/abi/account";
+import type { HexString } from "@/types/helper";
 import { computeAddress } from "ethers";
 import { CallData, hash, validateAndParseAddress } from "starknet";
-import type { Address } from "viem";
 import { decimalStringToHex } from "./decimal-conversions";
 
 export const deriveAddress = (rawPubKey?: string, flavour?: NETWORK_FLAVOUR_VALUES) => {
   if (!rawPubKey || !flavour) {
-    return "";
+    throw new Error("Couldn't derive address! Missing public key or network flavour.");
   }
 
   const pubKey = decimalStringToHex(rawPubKey, false);
 
   switch (flavour) {
-    case "starknet": {
+    case NETWORK_FLAVOUR.STARKNET: {
       const myCallData = new CallData(starknetAccountAbi);
 
       const constructorCalldata = myCallData.compile("constructor", {
@@ -28,10 +28,10 @@ export const deriveAddress = (rawPubKey?: string, flavour?: NETWORK_FLAVOUR_VALU
         constructorCalldata,
         0,
       );
-      return validateAndParseAddress(address) as Address;
+      return validateAndParseAddress(address) as HexString;
     }
-    case "evm": {
-      return computeAddress(pubKey) as Address;
+    case NETWORK_FLAVOUR.EVM: {
+      return computeAddress(pubKey) as HexString;
     }
   }
 };

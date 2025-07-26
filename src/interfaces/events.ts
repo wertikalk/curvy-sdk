@@ -8,8 +8,9 @@ import type {
   SyncProgressEvent,
   SyncStartedEvent,
 } from "@/types/events";
+import type EventEmitter from "eventemitter3";
 
-interface ICurvyEventEmitter {
+interface ICurvyEventEmitter extends EventEmitter {
   emitSyncStarted(event: SyncStartedEvent): void;
   emitSyncProgress(event: SyncProgressEvent): void;
   emitSyncComplete(event: SyncCompleteEvent): void;

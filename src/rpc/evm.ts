@@ -1,7 +1,7 @@
 import type { EVM_NETWORKS, NETWORK_FLAVOUR } from "@/constants/networks";
 import { evmMulticall3Abi } from "@/contracts/evm/abi/multicall3";
-import type { CurvyAddress, CurvyAddressBalances } from "@/interfaces/address";
 import { Rpc } from "@/rpc/abstract";
+import type { CurvyAddress, CurvyAddressBalances } from "@/types/address";
 import type { Network } from "@/types/api";
 import type { HexString } from "@/types/helper";
 import { networkGroupToSlug, toSlug } from "@/utils/helpers";

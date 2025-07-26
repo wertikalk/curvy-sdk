@@ -5,7 +5,19 @@ import type {
   STARKNET_NETWORKS,
   TOKENS,
 } from "@/constants/networks";
-import type { ScannedAnnouncement } from "@/types";
+import type { RawAnnoucement } from "@/types/api";
+
+type ScannedAnnouncement = RawAnnoucement & {
+  publicKey: string;
+  walletId: string;
+  address: string;
+};
+
+type AnnouncementBase = {
+  ephemeralPublicKey: string;
+  viewTag: string;
+  recipientStealthPublicKey: string;
+};
 
 // biome-ignore lint/suspicious/noExplicitAny: Need to allow any for generic type
 type CurvyAddressBalances<T extends NETWORK_FLAVOUR_VALUES = any> = Record<
@@ -35,6 +47,8 @@ interface MinifiedCurvyAddress<T extends NETWORK_FLAVOUR_VALUES = any>
 }
 
 export type {
+  AnnouncementBase,
+  ScannedAnnouncement,
   CurvyAddress,
   CurvyAddressBalances,
   CurvyAddressBalance,

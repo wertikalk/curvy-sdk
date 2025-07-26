@@ -1,3 +1,5 @@
+import type { StarknetSignTypedDataParameters } from "@/types/signature";
+
 const CURVY_ACCOUNT_CLASS_HASHES = [
   "0x5c3d0c6de131223c3f0c5691bca79047605ed0f241b5f82fdedd3b3bec70d7a",
   "0x76fe16155ba56e21af745f15c85cc989987b74e8bb48af2e7f147991b62c082",
@@ -47,7 +49,7 @@ const getSignatureParams = (messageToSign: string) => {
       title: "Curvy Protocol says 'Zdravo'!",
       content: `Curvy Protocol requests signature: ${messageToSign}`,
     },
-  };
+  } satisfies StarknetSignTypedDataParameters;
 };
 
 export { CURVY_ACCOUNT_CLASS_HASHES, CURVY_DUMMY_STARKNET_ACCOUNT, getSignatureParams };

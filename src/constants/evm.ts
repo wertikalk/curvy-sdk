@@ -1,15 +1,17 @@
+import type { EvmSignTypedDataParameters } from "@/types/signature";
+
 const getSignatureParams = (messageToSign: string) => {
   return {
     domain: {
       name: "Curvy Protocol",
       version: "1.0.0",
-      chainId: 1,
+      chainId: 1 as const,
     },
     message: {
       title: "Curvy Protocol says 'Zdravo'!",
       content: `Curvy Protocol requests signature: ${messageToSign}`,
     },
-    primaryType: "AuthMessage",
+    primaryType: "AuthMessage" as const,
     types: {
       EIP712Domain: [
         { name: "name", type: "string" },
@@ -27,7 +29,7 @@ const getSignatureParams = (messageToSign: string) => {
         },
       ],
     },
-  };
+  } satisfies EvmSignTypedDataParameters;
 };
 
 export { getSignatureParams };

@@ -319,6 +319,11 @@ class CurvySDK implements ICurvySdk {
     }
   }
 
+  async addWalletWithSignature(flavour: NETWORK_FLAVOUR["EVM"], signature: EvmSignatureData): Promise<CurvyWallet>;
+  async addWalletWithSignature(
+    flavour: NETWORK_FLAVOUR["STARKNET"],
+    signature: StarknetSignatureData,
+  ): Promise<CurvyWallet>;
   async addWalletWithSignature(flavour: NETWORK_FLAVOUR_VALUES, signature: EvmSignatureData | StarknetSignatureData) {
     const [sigR, sigS] = await this.#verifySignature(flavour, signature);
     const { s, v } = computePrivateKeys(BigInt(sigS), BigInt(sigR));

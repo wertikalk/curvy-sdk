@@ -152,8 +152,6 @@ async function signInWithMetamask() {
     params,
   });
 
-  console.log(rawSignature);
-
   await window.curvySDK.addWalletWithSignature("evm", {
     signatureResult: rawSignature,
     signatureParams: signingObject,

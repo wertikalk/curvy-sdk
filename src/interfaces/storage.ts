@@ -3,21 +3,6 @@ import type { RawAnnoucement } from "@/types/api";
 import type { CurvyWalletData, ScanInfo } from "@/types/wallet";
 import type { CurvyWallet } from "@/wallet";
 
-export type AnnouncementQuery = {
-  startTime?: Date;
-  endTime?: Date;
-  size?: number;
-  offset?: number;
-  networkId?: number[];
-};
-
-export type AnnouncementQueryResult = {
-  announcements: RawAnnoucement[];
-  total: number;
-  oldestTimestamp?: Date;
-  latestTimestamp?: Date;
-};
-
 export interface StorageInterface {
   storeCurvyAddress(announcement: RawAnnoucement): Promise<void>;
   storeManyCurvyAddresses(announcements: RawAnnoucement[]): Promise<void>;

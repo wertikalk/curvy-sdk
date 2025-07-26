@@ -1,6 +1,9 @@
 import { concat, keccak256 } from "ethers";
 
-export const computePrivateKeys = (_s: bigint, _r: bigint) => {
+export const computePrivateKeys = (r_string: string, s_string: string) => {
+  const _r = BigInt(r_string);
+  const _s = BigInt(s_string);
+
   const [s, v] = [hash([_s, _r]), hash([_r, _s])];
 
   if (s === v) throw new Error("Error generating keys: k === v !");

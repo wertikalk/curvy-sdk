@@ -249,7 +249,6 @@ async function populateWalletsTree() {
           const balanceElem = document.createElement("li");
 
           const currency = network.currencies.find((c) => c.symbol === symbol);
-          get;
 
           balanceElem.className = "balance";
           balanceElem.setAttribute("onclick", "selectStealthAddress.call(this)");

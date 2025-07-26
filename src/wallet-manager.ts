@@ -3,8 +3,8 @@ import type { CurvyEventEmitter } from "@/events";
 import type { IAddressScanner } from "@/interfaces/address-scanner";
 import type { IApiClient } from "@/interfaces/api";
 import type { ICore } from "@/interfaces/core";
+import type { StorageInterface } from "@/interfaces/storage";
 import type { IWalletManager } from "@/interfaces/wallet-manager";
-import type { StorageInterface } from "@/storage/interface";
 import { signJwtNonce } from "@/utils/helpers";
 import type { CurvyWallet } from "@/wallet";
 
@@ -41,7 +41,7 @@ class WalletManager implements IWalletManager {
     return this.#activeWallet;
   }
 
-  public getWalletById(id: string): CurvyWallet | undefined {
+  getWalletById(id: string): CurvyWallet | undefined {
     return this.#wallets.get(id);
   }
 

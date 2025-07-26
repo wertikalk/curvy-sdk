@@ -4,7 +4,7 @@ import type { CurvyWalletData } from "@/types/wallet";
 import { bytesToDecimalString, decimalStringToBytes } from "@/utils/decimal-conversions";
 import type { CurvyWallet } from "@/wallet";
 import merge from "lodash.merge";
-import type { StorageInterface } from "./interface";
+import type { StorageInterface } from "../interfaces/storage";
 
 export class TemporaryStorage implements StorageInterface {
   readonly #walletStorage = new Map<string, CurvyWalletData>();

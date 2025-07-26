@@ -15,7 +15,7 @@ import type { CurvySignatureParameters, EvmSignatureData, StarknetSignatureData 
 import type { NetworkFilter } from "@/utils/network";
 import type { CurvyWallet } from "@/wallet";
 
-interface ICurvySdk {
+interface ICurvySDK {
   // Getters
   get rpcClient(): MultiRpc;
   get wallets(): CurvyWallet[];
@@ -37,6 +37,22 @@ interface ICurvySdk {
   addWalletWithSignature(flavour: NETWORK_FLAVOUR["EVM"], signature: EvmSignatureData): Promise<CurvyWallet>;
   addWalletWithSignature(flavour: NETWORK_FLAVOUR["STARKNET"], signature: StarknetSignatureData): Promise<CurvyWallet>;
   addWalletWithSignature(
+    flavour: NETWORK_FLAVOUR_VALUES,
+    signature: EvmSignatureData | StarknetSignatureData,
+  ): Promise<CurvyWallet>;
+
+  registerWalletWithSignature(
+    handle: string,
+    flavour: NETWORK_FLAVOUR["EVM"],
+    signature: EvmSignatureData,
+  ): Promise<CurvyWallet>;
+  registerWalletWithSignature(
+    handle: string,
+    flavour: NETWORK_FLAVOUR["STARKNET"],
+    signature: StarknetSignatureData,
+  ): Promise<CurvyWallet>;
+  registerWalletWithSignature(
+    handle: string,
     flavour: NETWORK_FLAVOUR_VALUES,
     signature: EvmSignatureData | StarknetSignatureData,
   ): Promise<CurvyWallet>;
@@ -71,4 +87,4 @@ interface ICurvySdk {
   onScanError(listener: (event: ScanErrorEvent) => void): void;
 }
 
-export type { ICurvySdk };
+export type { ICurvySDK };

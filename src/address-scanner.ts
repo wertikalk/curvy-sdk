@@ -2,7 +2,7 @@ import type { CurvyEventEmitter } from "@/events";
 import type { IAddressScanner } from "@/interfaces/address-scanner";
 import type { IApiClient } from "@/interfaces/api";
 import type { ICore } from "@/interfaces/core";
-import type { StorageInterface } from "@/storage/interface";
+import type { StorageInterface } from "@/interfaces/storage";
 import type { CurvyAddress } from "@/types/address";
 import type { RawAnnoucement } from "@/types/api";
 import { deriveAddress } from "@/utils/address";

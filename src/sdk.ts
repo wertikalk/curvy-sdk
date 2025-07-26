@@ -18,16 +18,17 @@ import {
   type NETWORK_FLAVOUR_VALUES,
   type SUPPORTED_NETWORKS_VALUES,
 } from "@/constants/networks";
+import { CURVY_HANDLE_REGEX } from "@/constants/regex";
 import { CurvyEventEmitter } from "@/events";
 import { ApiClient } from "@/http/api";
 import type { IApiClient } from "@/interfaces/api";
 import type { ICore } from "@/interfaces/core";
 import type { ICurvyEventEmitter } from "@/interfaces/events";
-import type { ICurvySdk } from "@/interfaces/sdk";
+import type { ICurvySDK } from "@/interfaces/sdk";
+import type { StorageInterface } from "@/interfaces/storage";
 import type { IWalletManager } from "@/interfaces/wallet-manager";
 import { newMultiRpc } from "@/rpc/factory";
 import type { MultiRpc } from "@/rpc/multi";
-import type { StorageInterface } from "@/storage/interface";
 import { TemporaryStorage } from "@/storage/temporary-storage";
 import type { CurvyAddress } from "@/types/address";
 import type { Network } from "@/types/api";
@@ -62,7 +63,7 @@ import { WalletManager } from "./wallet-manager";
 
 globalThis.Buffer = Buffer;
 
-class CurvySDK implements ICurvySdk {
+class CurvySDK implements ICurvySDK {
   readonly #apiClient: IApiClient;
   readonly #emitter: ICurvyEventEmitter;
   readonly #core: ICore;
@@ -194,25 +195,13 @@ class CurvySDK implements ICurvySdk {
   }
 
   getNativeCurrencyForNetwork(network: Network) {
-    //TODO: Don't do starknet specific like this
-    if (network.flavour === "starknet") {
-      const currency = network.currencies.find(({ symbol }) => {
-        return symbol === "STRK";
-      });
+    const nativeCurrency = network.currencies.find((c) => c.native);
 
-      if (currency) {
-        return currency;
-      }
+    if (!nativeCurrency) {
       throw new Error(`No native currency found for network ${network.name}`);
     }
 
-    const currency = network.currencies.find(({ contract_address }) => contract_address === undefined);
-
-    if (!currency) {
-      throw new Error(`No native currency found for network ${network.name}`);
-    }
-
-    return currency;
+    return nativeCurrency;
   }
 
   async getSignatureParamsForNetworkFlavour(flavour: NETWORK_FLAVOUR_VALUES, ownerAddress: string, password: string) {
@@ -325,19 +314,17 @@ class CurvySDK implements ICurvySdk {
     signature: StarknetSignatureData,
   ): Promise<CurvyWallet>;
   async addWalletWithSignature(flavour: NETWORK_FLAVOUR_VALUES, signature: EvmSignatureData | StarknetSignatureData) {
-    const [sigR, sigS] = await this.#verifySignature(flavour, signature);
-    const { s, v } = computePrivateKeys(BigInt(sigS), BigInt(sigR));
+    const [r_string, s_string] = await this.#verifySignature(flavour, signature);
+    const { s, v } = computePrivateKeys(r_string, s_string);
 
     const keyPairs = this.#core.getCurvyKeys(s, v);
 
     const curvyHandle = await this.#apiClient.user.GetCurvyHandleByOwnerAddress(signature.signingAddress);
-
     if (!curvyHandle) {
       throw new Error(`No Curvy handle found for owner address: ${signature.signingAddress}`);
     }
 
     const { data: ownerDetails } = await this.#apiClient.user.ResolveCurvyHandle(curvyHandle);
-
     if (!ownerDetails) throw new Error(`Handle ${curvyHandle} does not exist.`);
 
     const { createdAt, publicKeys } = ownerDetails;
@@ -346,9 +333,63 @@ class CurvySDK implements ICurvySdk {
       throw new Error(`Wrong password for handle ${curvyHandle}.`);
 
     const walletId = await generateWalletId(keyPairs.s, keyPairs.v);
-
     const wallet = new CurvyWallet(walletId, +dayjs(createdAt), curvyHandle, signature.signingAddress, keyPairs);
+    await this.#walletManager.addWallet(wallet);
 
+    return wallet;
+  }
+
+  async registerWalletWithSignature(
+    handle: string,
+    flavour: NETWORK_FLAVOUR["EVM"],
+    signature: EvmSignatureData,
+  ): Promise<CurvyWallet>;
+  async registerWalletWithSignature(
+    handle: string,
+    flavour: NETWORK_FLAVOUR["STARKNET"],
+    signature: StarknetSignatureData,
+  ): Promise<CurvyWallet>;
+  async registerWalletWithSignature(
+    handle: string,
+    flavour: NETWORK_FLAVOUR_VALUES,
+    signature: EvmSignatureData | StarknetSignatureData,
+  ) {
+    const curvyHandle = await this.#apiClient.user.GetCurvyHandleByOwnerAddress(signature.signingAddress);
+    if (curvyHandle) {
+      throw new Error(`Handle ${curvyHandle} already registered, for owner address: ${signature.signingAddress}`);
+    }
+
+    if (!CURVY_HANDLE_REGEX.test(handle))
+      throw new Error(
+        `Invalid handle format: ${handle}. Curvy handles can only include letters, numbers, and dashes, with a minimum of 3 and maximum length of 20 characters.`,
+      );
+
+    const { data: ownerDetails } = await this.#apiClient.user.ResolveCurvyHandle(handle);
+    if (ownerDetails) throw new Error(`Handle ${handle} already registered.`);
+
+    const [r_string, s_string] = await this.#verifySignature(flavour, signature);
+    const { s, v } = computePrivateKeys(r_string, s_string);
+
+    const keyPairs = this.#core.getCurvyKeys(s, v);
+
+    await this.#apiClient.user.RegisterCurvyHandle({
+      handle: `${handle}${CURVY_HANDLE_DOMAIN}`,
+      ownerAddress: signature.signingAddress,
+      publicKeys: [{ viewingKey: keyPairs.V, spendingKey: keyPairs.S }],
+    });
+
+    const { data: registerDetails } = await this.#apiClient.user.ResolveCurvyHandle(handle);
+    if (!registerDetails)
+      throw new Error(`Registration validation failed for handle ${handle}. Please try adding the wallet manually.`);
+
+    const walletId = await generateWalletId(keyPairs.s, keyPairs.v);
+    const wallet = new CurvyWallet(
+      walletId,
+      +dayjs(registerDetails.createdAt),
+      handle,
+      signature.signingAddress,
+      keyPairs,
+    );
     await this.#walletManager.addWallet(wallet);
 
     return wallet;

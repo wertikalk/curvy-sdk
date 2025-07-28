@@ -8,8 +8,8 @@ export * from "../errors";
 
 export * from "../features";
 
-export * from "../features/csuc/types";
-export * from "../features/csuc/utils";
+export * as TypesCSUC from "../features/csuc/types";
+export * as UtilsCSUC from "../features/csuc/utils";
 
 export {
     SYNC_STARTED_EVENT,

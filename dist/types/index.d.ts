@@ -910,6 +910,10 @@ declare namespace Types$1 {
     };
 }
 
+declare namespace types {
+  export { Types$1 as Types };
+}
+
 declare namespace Utils {
     const PrepareActionEstimationRequest: (network: Types$1.SupportedNetwork, action: Types$1.ActionSet, from: CurvyStealthAddress, to: Address | string, token: Address, amount: string | bigint) => Promise<Types$1.ActionPayload>;
     const PrepareActionRequest: (network: Types$1.SupportedNetwork, from: CurvyStealthAddress, payload: Types$1.ActionPayload, totalFee: string) => Promise<Types$1.Action>;
@@ -925,6 +929,11 @@ declare namespace Utils {
             const getTokenSymbol: (network: Types$1.SupportedNetwork, tokenAddress: string) => string | undefined;
         }
     }
+}
+
+declare const utils_Utils: typeof Utils;
+declare namespace utils {
+  export { utils_Utils as Utils };
 }
 
 declare class CSUC {
@@ -1172,4 +1181,4 @@ declare class APIError extends CurvyError {
     constructor(message: string, statusCode?: number | undefined, responseBody?: unknown | undefined);
 }
 
-export { APIError, type Announcement, type AnnouncementBase, AnnouncementSyncError, type AuthConfig, CSUC, type CreateAnnouncementParams, type CreateAnnouncementResponse, type Currency, CurvyError, CurvySDK, CurvyWallet, type GetAnnouncementsResponse, type GetUsernameByOwnerAddressResponse, type Network, type NetworkFilter, type NetworkFlavour, type NetworkGroup, type PublicKey, type ResolveUsernameResponse, SCAN_COMPLETE_EVENT, SCAN_ERROR_EVENT, SCAN_MATCH_EVENT, SCAN_PROGRESS_EVENT, SYNC_COMPLETE_EVENT, SYNC_ERROR_EVENT, SYNC_PROGRESS_EVENT, SYNC_STARTED_EVENT, type ScanCompleteEvent, type ScanErrorEvent, type ScanMatchEvent, type ScanProgressEvent, type ScannedAnnouncement, StorageError, type SyncCompleteEvent, type SyncErrorEvent, type SyncProgressEvent, type SyncStartedEvent, Types$1 as Types, type User, Utils, filterNetworks, init };
+export { APIError, type Announcement, type AnnouncementBase, AnnouncementSyncError, type AuthConfig, CSUC, type CreateAnnouncementParams, type CreateAnnouncementResponse, type Currency, CurvyError, CurvySDK, CurvyWallet, type GetAnnouncementsResponse, type GetUsernameByOwnerAddressResponse, type Network, type NetworkFilter, type NetworkFlavour, type NetworkGroup, type PublicKey, type ResolveUsernameResponse, SCAN_COMPLETE_EVENT, SCAN_ERROR_EVENT, SCAN_MATCH_EVENT, SCAN_PROGRESS_EVENT, SYNC_COMPLETE_EVENT, SYNC_ERROR_EVENT, SYNC_PROGRESS_EVENT, SYNC_STARTED_EVENT, type ScanCompleteEvent, type ScanErrorEvent, type ScanMatchEvent, type ScanProgressEvent, type ScannedAnnouncement, StorageError, type SyncCompleteEvent, type SyncErrorEvent, type SyncProgressEvent, type SyncStartedEvent, types as TypesCSUC, type User, utils as UtilsCSUC, filterNetworks, init };

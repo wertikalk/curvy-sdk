@@ -3,38 +3,44 @@ import type CurvyStealthAddress from "../stealth-address";
 import type { Network } from "../types";
 
 export default abstract class RPC {
-  protected network: Network;
+    protected network: Network;
 
-  constructor(network: Network) {
-    this.network = network;
-    this.init();
-  }
+    constructor(network: Network) {
+        this.network = network;
+        this.init();
+    }
 
-  public Network(): Network {
-    return this.network;
-  }
+    public Network(): Network {
+        return this.network;
+    }
 
-  abstract init(): void;
+    abstract init(): void;
 
-  abstract GetBalances(stealthAddress: CurvyStealthAddress): Promise<Record<string, bigint>>;
+    abstract GetBalances(
+        stealthAddress: CurvyStealthAddress
+    ): Promise<Record<string, bigint>>;
 
-  abstract SendToAddress(
-    stealthAddress: CurvyStealthAddress,
-    address: string,
-    amount: string,
-    currency: string,
+    abstract SendToAddress(
+        stealthAddress: CurvyStealthAddress,
+        address: string,
+        amount: string,
+        currency: string,
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        fee?: any
+    ): Promise<string>;
+
+    abstract EstimateFee(
+        stealthAddress: CurvyStealthAddress,
+        address: Address,
+        amount: string,
+        currency: string
+    ): // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    Promise<any>;
+
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    fee?: any,
-  ): Promise<string>;
+    abstract FeeToAmount(feeEstimate: any): bigint;
 
-  abstract EstimateFee(
-    stealthAddress: CurvyStealthAddress,
-    address: Address,
-    amount: string,
-    currency: string,
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  ): Promise<any>;
+    abstract CreateReferenceToERC20(token: Address): Promise<any>;
 
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  abstract FeeToAmount(feeEstimate: any): bigint;
+    abstract CreateReferenceToCSUC(): Promise<any>;
 }
